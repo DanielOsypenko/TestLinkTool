@@ -183,6 +183,8 @@ public class G3INCAR_API {
 //    }
 
     public Map<String, TestCase> getSummaries() {
+
+
 //new TestLinkAPI(new URL(SERVER_URL), DEV_KEY).getTestCaseByExternalId(tc.getFullExternalId());
 //        Flux.fromIterable(Arrays.asList(testCasesActual))
 //                .flatMap(tc -> tryGetTestCaseSumByExternalId(tc))
@@ -265,19 +267,22 @@ public class G3INCAR_API {
     }
 
     // ============================= ============================= ============================= ==========================//
-    private static void getSummaries_performance(G3INCAR_API g3INCAR_api)  {
+    public List<String> getSummaries_performance()  {
 
 
         Instant startTimer = Instant.now();
 
         logger.info("before getTestCasesFailed " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()));
-        g3INCAR_api.getTestCasesPassed();
+        getTestCasesPassed();
 //        List<String> ids = Arrays.stream(g3INCAR_api.testCasesActual).map(TestCase::getFullExternalId).collect(Collectors.toList());
-        Map<Integer, String> ids = Arrays.stream(g3INCAR_api.testCasesActual).collect(Collectors.toMap(TestCase::getId, TestCase::getFullExternalId));
+        Map<Integer, String> ids = Arrays.stream(testCasesActual).collect(Collectors.toMap(TestCase::getId, TestCase::getFullExternalId));
         logger.info("after getTestCasesFailed " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()));
-        Map<String, TestCase> summaries = g3INCAR_api.getSummaries();
+        Map<String, TestCase> summaries = getSummaries();
         summaries.forEach((key, value) -> logger.info(key + ":" + value.toString()));
         logger.info("after getSummaries " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()) +
                 " took " + Duration.between(Instant.now(), startTimer).getSeconds() + "sec");
+        return summaries.values().stream().map(TestCase::toString).collect(Collectors.toList());
     }
+
+
 }

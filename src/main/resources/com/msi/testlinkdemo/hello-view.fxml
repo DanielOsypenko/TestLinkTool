@@ -7,6 +7,9 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TreeView?>
+
+<?import javafx.scene.layout.StackPane?>
 <VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.msi.testlinkdemo.HelloController">
     <padding>
@@ -14,8 +17,12 @@
     </padding>
 
 <!--    <Button text="GetTestCases" onAction="#onHelloButtonClick"/>-->
-    <Button text="GetTestCases" onAction="#onGetTestSuitsAndCasesClick"/>
 <!--    <Label fx:id="testCasesDemo"/>-->
-<!--    <ListView fx:id="tcsNames"/>-->
-    <TableView fx:id="testPlanView"/>
+
+    <Button text="GetTestCases" onAction="#onGetTestCasesClick"/>
+    <ListView fx:id="tcsNames"/>
+    <Button text="GetTestSuites" onAction="#onGetTestSuitsAndCasesClick"/>
+    <StackPane fx:id="root"/>
+
+    <!--    <TreeView fx:id="testPlanView"/>-->
 </VBox>
