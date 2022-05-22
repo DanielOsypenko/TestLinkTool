@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 
 public class G3INCAR_API {
 
+
+
     private final static String SERVER_URL = "http://testlink.watchguardvideo.local/lib/api/xmlrpc/v1/xmlrpc.php";
     private final static String DEV_KEY = "7f2baca03137da97cb6358d62737d0bd";
     private static final Logger logger = LoggerFactory.getLogger(G3INCAR_API.class.getSimpleName());
