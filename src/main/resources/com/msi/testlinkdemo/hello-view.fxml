@@ -10,6 +10,8 @@
 <?import javafx.scene.control.TreeView?>
 
 <?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.control.ComboBox?>
+<?import java.lang.String?>
 <VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.msi.testlinkdemo.HelloController">
     <padding>
@@ -18,11 +20,15 @@
 
 <!--    <Button text="GetTestCases" onAction="#onHelloButtonClick"/>-->
 <!--    <Label fx:id="testCasesDemo"/>-->
-
-    <Button text="GetTestCases" onAction="#onGetTestCasesClick"/>
-    <ListView fx:id="tcsNames"/>
+    <ComboBox fx:id="testPlanBox" onShowing="#onAppearance">
+        <value>
+            <String fx:value="Test Plan" />
+        </value>
+    </ComboBox>
     <Button text="GetTestSuites" onAction="#onGetTestSuitsAndCasesClick"/>
     <StackPane fx:id="root"/>
+    <Button text="GetTestCases" onAction="#onGetTestCasesClick"/>
+    <ListView fx:id="tcsNames"/>
 
     <!--    <TreeView fx:id="testPlanView"/>-->
 </VBox>

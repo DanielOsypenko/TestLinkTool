@@ -1,29 +1,34 @@
 package com.msi.testlinkdemo;
 
-import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
+import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
 import com.msi.testlinkBack.G3INCAR_API;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
-import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 public class HelloController {
     private static final Logger logger = LoggerFactory.getLogger(G3INCAR_API.class.getSimpleName());
+    G3INCAR_API g3INCAR_api;
+
+    public HelloController() {
+        try {
+            g3INCAR_api = new G3INCAR_API().chooseProject("G3INCAR");
+        } catch (MalformedURLException e) {
+            logger.error(Arrays.toString(Arrays.stream(e.getStackTrace()).toArray()));
+        }
+    }
 
     @FXML
-    private Label testCasesDemo;
+    private ComboBox<String> testPlanBox;
 
     @FXML
     private ListView<String> tcsNames;
@@ -34,40 +39,39 @@ public class HelloController {
     StackPane root;
 
     @FXML
-    protected void onHelloButtonClick() {
-        testCasesDemo.setText("Welcome to JavaFX Application!");
+    protected void onAppearance() {
+        testPlanBox.setVisibleRowCount(5);
+        TestPlan[] testPlans = g3INCAR_api.getTestPlans();
+        ObservableList<String> testPlansList = FXCollections.observableArrayList();
+        Arrays.stream(testPlans).forEach(tp -> {
+            logger.info("adding testPlan: " + tp.toString());
+            testPlansList.add(tp.getName());
+        });
+        testPlanBox.setItems(testPlansList);
+        testPlanBox.setOnAction((event) -> {
+            testPlanBox.getSelectionModel().getSelectedIndex();
+            String selectedItem = testPlanBox.getSelectionModel().getSelectedItem();
+            if (selectedItem != null) g3INCAR_api.chooseTestPlan(selectedItem);
+            logger.info("selected test plan="+selectedItem);
+        });
     }
+
+
 
     @FXML
     protected void onGetTestCasesClick() {
-        G3INCAR_API g3INCAR_api = null;
-        try {
-            g3INCAR_api = new G3INCAR_API().chooseProject("G3INCAR");
-        } catch (MalformedURLException e) {
-            logger.error(Arrays.toString(Arrays.stream(e.getStackTrace()).toArray()));
-        }
         assert g3INCAR_api != null;
         g3INCAR_api.chooseTestPlan("Manual ECN - 1.0.12");
         g3INCAR_api.getTestCases();
-        List<String> tcs = g3INCAR_api.getSummaries_performance();
-
-//        ListView<String> testCasesList = new ListView<>();
+        List<String> tcs = g3INCAR_api.getSummariesAndStatus();
         ObservableList<String> items = FXCollections.observableArrayList(tcs);
         tcsNames.setItems(items);
         logger.info("onGetTestCasesClick is done");
-
     }
 
     @FXML
     protected void onGetTestSuitsAndCasesClick(){
-        G3INCAR_API g3INCAR_api = null;
-        try {
-            g3INCAR_api = new G3INCAR_API().chooseProject("G3INCAR");
-        } catch (MalformedURLException e) {
-            logger.error(Arrays.toString(Arrays.stream(e.getStackTrace()).toArray()));
-        }
         assert g3INCAR_api != null;
-        g3INCAR_api.chooseTestPlan("Manual ECN - 1.0.11");
 
         Map<String, String[]> testSuitesPerTestCases = g3INCAR_api.getTestSuitesPerTestCasesCustomStr();
 //        logger.info("num of test suits="+testSuitesPerTestCases.entrySet().size());
@@ -81,33 +85,32 @@ public class HelloController {
 //
 //        TableColumn<String, String> valueColumn = new TableColumn<>("TestCase");
 //        valueColumn.setCellValueFactory(cd -> new SimpleStringProperty("TestCase"));
+        TreeItem<String> testCasesTree = createTestCasesTree(testSuitesPerTestCases);
+        if (testCasesTree != null) {
+            TreeView<String> testPlanView = new TreeView<>(createTestCasesTree(testSuitesPerTestCases));
+            root.getChildren().add(testPlanView);
 
+        }
 
-        TreeView<String> testPlanView = new TreeView<>(createTreeCustom(testSuitesPerTestCases));
-
-        root.getChildren().add(testPlanView);
-
-        logger.info("check done");
     }
 
-    private TreeItem<String>  check_test(){
-        TreeItem<String> result = new TreeItem<>("TestPlan - 11");
-        result.getChildren().add(new TreeItem<>("one"));
-        result.getChildren().add(new TreeItem<>("two"));
-        result.getChildren().add(new TreeItem<>("three"));
-        return result;
-    }
 
-    private static TreeItem<String> createTreeCustom(Map<String, String[]> map){
-        TreeItem<String> result = new TreeItem<>("TestPlan - 11");
-
-        map.forEach((suite, value) -> {
-            TreeItem<String> suiteItem = new TreeItem<>(suite);
-            Arrays.stream(value).forEach(tc -> suiteItem.getChildren().add(new TreeItem<>(tc))
-            );
-            result.getChildren().add(suiteItem);
-        });
-        return result;
+    private  TreeItem<String> createTestCasesTree(Map<String, String[]> map){
+        String testPlanName = g3INCAR_api.getTestPlanName();
+        if (testPlanName != null) {
+            TreeItem<String> testCasesTree = new TreeItem<>(g3INCAR_api.getTestPlanName());
+            map.forEach((suite, value) -> {
+                TreeItem<String> suiteItem = new TreeItem<>(suite);
+                Arrays.stream(value).forEach(tc -> suiteItem.getChildren().add(new TreeItem<>(tc))
+                );
+                testCasesTree.getChildren().add(suiteItem);
+            });
+            return testCasesTree;
+        } else {
+            //TODO: set combobox red
+            logger.error("set test plan before");
+        }
+        return null;
     }
 
     /// Attempt to use Table  ///

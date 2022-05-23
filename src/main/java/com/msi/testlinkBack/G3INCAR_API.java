@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class G3INCAR_API {
@@ -32,8 +33,19 @@ public class G3INCAR_API {
     String testPlanName;
     TestSuite[] testSuite;
     int testPlanId;
-    TestCase[] testCases = null;
+//    TestCase[] testCases = null;
     TestCase[] testCasesActual = null;
+    TestCase[] testCasesActualNotRun = null;
+    TestCase[] testCasesActualPassed = null;
+    TestCase[] testCasesActualBlocked = null;
+    TestCase[] testCasesActualFailed = null;
+    int testCasesActualNum;
+    int testCasesActualNotRunNum;
+    int testCasesActualPassedNum;
+    int testCasesActualBlockedNum;
+    int testCasesActualFailedNum;
+    private Map<ExecutionStatus, TestCase> testCasesToStatusMap;
+
 
     public G3INCAR_API() throws MalformedURLException {
         api = new TestLinkAPI(new URL(SERVER_URL), DEV_KEY);
@@ -90,11 +102,21 @@ public class G3INCAR_API {
         return api.getTestCasesForTestSuite(testSuite.getId(), true, null);
     }
 
+    private void setTestPlan(TestPlan testPlan) {
+        this.testPlan = testPlan;
+    }
 
+    public String getTestPlanName() {
+        return testPlanName;
+    }
+
+    private void setTestPlanName(String testPlanName) {
+        this.testPlanName = testPlanName;
+    }
 
     public TestCase[] getTestCases() {
         if (this.projectName != null && this.testPlanName != null) {
-            this.testCases = api.getTestCasesForTestPlan(
+            this.testCasesActual = api.getTestCasesForTestPlan(
                     this.testPlanId
                     , null
                     , null
@@ -109,7 +131,8 @@ public class G3INCAR_API {
         } else {
             logger.error("Set projectName && testPlanName");
         }
-        return testCases;
+        this.testCasesActualNum = testCasesActual.length;
+        return testCasesActual;
     }
 
 
@@ -130,33 +153,77 @@ public class G3INCAR_API {
 
 
     public TestCase[] getTestCasesByExecStatus(ExecutionStatus executionStatus) {
-        if (testCases == null || testCases.length > 0) {
+        if (testCasesActual == null || testCasesActual.length > 0) {
             getTestCases();
         } else {
             logger.error("No test cases found");
         }
-        return Arrays.stream(testCases).filter(tc -> (tc.getExecutionStatus() == executionStatus)).toArray(TestCase[]::new);
+        return Arrays.stream(testCasesActual).filter(tc -> (tc.getExecutionStatus() == executionStatus)).toArray(TestCase[]::new);
+    }
+
+    public Map<ExecutionStatus, TestCase> getTestCasesToStatusMap() {
+        if (testCasesActual == null || testCasesActual.length > 0) {
+            getTestCases();
+        } else {
+            logger.error("No test cases found");
+        }
+        this.testCasesToStatusMap = Arrays.stream(testCasesActual).collect(Collectors.toMap(TestCase::getExecutionStatus, Function.identity()));
+        getTestCasesNotRun();
+        getTestCasesPassed();
+        getTestCasesBlocked();
+        getTestCasesFailed();
+        return this.testCasesToStatusMap;
+    }
+
+    public Map<ExecutionStatus, TestCase> updateTestCasesToStatusMap() {
+        testCasesActual = null;
+        return getTestCasesToStatusMap();
     }
 
     public TestCase[] getTestCasesNotRun() {
-        testCasesActual = getTestCasesByExecStatus(ExecutionStatus.NOT_RUN);
-        return testCasesActual;
+        if (this.testCasesToStatusMap.isEmpty()){
+            getTestCasesToStatusMap();
+        }
+        testCasesActualNotRun = this.testCasesToStatusMap.values().stream()
+                .filter(tc-> (tc.getExecutionStatus() == ExecutionStatus.NOT_RUN))
+                .toArray(TestCase[]::new);
+        testCasesActualNotRunNum = testCasesActualNotRun.length;
+        return testCasesActualNotRun;
     }
 
     public TestCase[] getTestCasesPassed() {
-        testCasesActual = getTestCasesByExecStatus(ExecutionStatus.PASSED);
-        return testCasesActual;
+        if (this.testCasesToStatusMap.isEmpty()){
+            getTestCasesToStatusMap();
+        }
+        testCasesActualNotRun = this.testCasesToStatusMap.values().stream()
+                .filter(tc-> (tc.getExecutionStatus() == ExecutionStatus.PASSED))
+                .toArray(TestCase[]::new);
+        testCasesActualNotRunNum = testCasesActualNotRun.length;
+        return testCasesActualNotRun;
     }
 
     public TestCase[] getTestCasesBlocked() {
-        testCasesActual = getTestCasesByExecStatus(ExecutionStatus.BLOCKED);
-        return testCasesActual;
+        if (this.testCasesToStatusMap.isEmpty()) {
+            getTestCasesToStatusMap();
+        }
+        testCasesActualNotRun = this.testCasesToStatusMap.values().stream()
+                .filter(tc-> (tc.getExecutionStatus() == ExecutionStatus.BLOCKED))
+                .toArray(TestCase[]::new);
+        testCasesActualNotRunNum = testCasesActualNotRun.length;
+        return testCasesActualNotRun;
     }
 
     public TestCase[] getTestCasesFailed() {
-        testCasesActual = getTestCasesByExecStatus(ExecutionStatus.FAILED);
-        return testCasesActual;
+        if (this.testCasesToStatusMap.isEmpty()) {
+            getTestCasesToStatusMap();
+        }
+        testCasesActualNotRun = this.testCasesToStatusMap.values().stream()
+                .filter(tc-> (tc.getExecutionStatus() == ExecutionStatus.FAILED))
+                .toArray(TestCase[]::new);
+        testCasesActualNotRunNum = testCasesActualNotRun.length;
+        return testCasesActualNotRun;
     }
+
 
     //    Manual ECN - 1.0.11
     public List<String> getTestPlanNames() {
@@ -183,25 +250,6 @@ public class G3INCAR_API {
 //    }
 
     public Map<String, TestCase> getSummaries() {
-
-
-//new TestLinkAPI(new URL(SERVER_URL), DEV_KEY).getTestCaseByExternalId(tc.getFullExternalId());
-//        Flux.fromIterable(Arrays.asList(testCasesActual))
-//                .flatMap(tc -> tryGetTestCaseSumByExternalId(tc))
-//                .parallel()
-//                .runOn(Schedulers.parallel())
-//                .sequential()
-//                .collectList()
-//                .block();
-
-//        return Flux.fromIterable(ids)
-//                .mapNotNull(this::tryGetTestCaseSumByExternalId)
-//                .parallel(300)
-//                .runOn(Schedulers.parallel())
-//                .sequential()
-//                .collectList()
-//                .block();
-
 
         Map<Integer, String> ids = Arrays.stream(this.testCasesActual)
                 .collect(Collectors.toMap(TestCase::getId, TestCase::getFullExternalId));
@@ -267,20 +315,20 @@ public class G3INCAR_API {
     }
 
     // ============================= ============================= ============================= ==========================//
-    public List<String> getSummaries_performance()  {
+    public List<String> getSummariesAndStatus()  {
 
 
         Instant startTimer = Instant.now();
 
         logger.info("before getTestCasesFailed " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()));
-        getTestCasesPassed();
+        getTestCases();
 //        List<String> ids = Arrays.stream(g3INCAR_api.testCasesActual).map(TestCase::getFullExternalId).collect(Collectors.toList());
         Map<Integer, String> ids = Arrays.stream(testCasesActual).collect(Collectors.toMap(TestCase::getId, TestCase::getFullExternalId));
         logger.info("after getTestCasesFailed " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()));
         Map<String, TestCase> summaries = getSummaries();
         summaries.forEach((key, value) -> logger.info(key + ":" + value.toString()));
-        logger.info("after getSummaries " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()) +
-                " took " + Duration.between(Instant.now(), startTimer).getSeconds() + "sec");
+//        logger.info("after getSummaries " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()) +
+//                " took " + Duration.between(Instant.now(), startTimer).getSeconds() + "sec");
         return summaries.values().stream().map(TestCase::toString).collect(Collectors.toList());
     }
 
