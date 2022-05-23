@@ -62,7 +62,7 @@ public class HelloController {
     protected void onGetTestCasesClick() {
         assert g3INCAR_api != null;
         g3INCAR_api.chooseTestPlan("Manual ECN - 1.0.12");
-        g3INCAR_api.getTestCases();
+        g3INCAR_api.getTestCasesToStatusMap();
         List<String> tcs = g3INCAR_api.getSummariesAndStatus();
         ObservableList<String> items = FXCollections.observableArrayList(tcs);
         tcsNames.setItems(items);

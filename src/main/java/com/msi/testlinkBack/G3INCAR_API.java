@@ -15,7 +15,6 @@ import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class G3INCAR_API {
@@ -34,17 +33,17 @@ public class G3INCAR_API {
     TestSuite[] testSuite;
     int testPlanId;
 //    TestCase[] testCases = null;
-    TestCase[] testCasesActual = null;
-    TestCase[] testCasesActualNotRun = null;
-    TestCase[] testCasesActualPassed = null;
-    TestCase[] testCasesActualBlocked = null;
-    TestCase[] testCasesActualFailed = null;
+    List<TestCase> testCasesActual = null;
+    List<TestCase> testCasesActualNotRun = null;
+    List<TestCase> testCasesActualPassed = null;
+    List<TestCase> testCasesActualBlocked = null;
+    List<TestCase> testCasesActualFailed = null;
     int testCasesActualNum;
     int testCasesActualNotRunNum;
     int testCasesActualPassedNum;
     int testCasesActualBlockedNum;
     int testCasesActualFailedNum;
-    private Map<ExecutionStatus, TestCase> testCasesToStatusMap;
+    private Map<ExecutionStatus, List<TestCase>> testCasesToStatusMap;
 
 
     public G3INCAR_API() throws MalformedURLException {
@@ -98,8 +97,8 @@ public class G3INCAR_API {
         return api.getTestSuitesForTestPlan(this.testPlanId);
     }
 
-    public TestCase[] getTestCasesPerTestSuite(TestSuite testSuite){
-        return api.getTestCasesForTestSuite(testSuite.getId(), true, null);
+    public List<TestCase> getTestCasesPerTestSuite(TestSuite testSuite){
+        return Arrays.asList(api.getTestCasesForTestSuite(testSuite.getId(), true, null));
     }
 
     private void setTestPlan(TestPlan testPlan) {
@@ -114,9 +113,29 @@ public class G3INCAR_API {
         this.testPlanName = testPlanName;
     }
 
-    public TestCase[] getTestCases() {
+    public int getTestCasesActualNum() {
+        return testCasesActualNum;
+    }
+
+    public int getTestCasesActualNotRunNum() {
+        return testCasesActualNotRunNum;
+    }
+
+    public int getTestCasesActualPassedNum() {
+        return testCasesActualPassedNum;
+    }
+
+    public int getTestCasesActualBlockedNum() {
+        return testCasesActualBlockedNum;
+    }
+
+    public int getTestCasesActualFailedNum() {
+        return testCasesActualFailedNum;
+    }
+
+    public List<TestCase> getTestCases() {
         if (this.projectName != null && this.testPlanName != null) {
-            this.testCasesActual = api.getTestCasesForTestPlan(
+            this.testCasesActual = Arrays.asList(api.getTestCasesForTestPlan(
                     this.testPlanId
                     , null
                     , null
@@ -127,17 +146,17 @@ public class G3INCAR_API {
                     , null
                     , null
                     , null
-                    , null);
+                    , null));
         } else {
             logger.error("Set projectName && testPlanName");
         }
-        this.testCasesActualNum = testCasesActual.length;
+        this.testCasesActualNum = testCasesActual.size();
         return testCasesActual;
     }
 
 
-    public TestCase[] getTestCases(List<Integer> testCaseIds, Boolean executed, String[] executeStatus) {
-        return api.getTestCasesForTestPlan(testPlanId
+    public List<TestCase> getTestCases(List<Integer> testCaseIds, Boolean executed, String[] executeStatus) {
+        return Arrays.asList(api.getTestCasesForTestPlan(testPlanId
                 , testCaseIds
                 , null
                 , null
@@ -148,26 +167,28 @@ public class G3INCAR_API {
                 , null
                 , null
                 , null
-        );
+        ));
     }
 
 
-    public TestCase[] getTestCasesByExecStatus(ExecutionStatus executionStatus) {
-        if (testCasesActual == null || testCasesActual.length > 0) {
+    public List<TestCase> getTestCasesByExecStatus(ExecutionStatus executionStatus) {
+        if (testCasesActual == null || testCasesActual.size() > 0) {
             getTestCases();
         } else {
             logger.error("No test cases found");
         }
-        return Arrays.stream(testCasesActual).filter(tc -> (tc.getExecutionStatus() == executionStatus)).toArray(TestCase[]::new);
+        return testCasesActual.stream().filter(tc -> (tc.getExecutionStatus() == executionStatus)).collect(Collectors.toList());
     }
 
-    public Map<ExecutionStatus, TestCase> getTestCasesToStatusMap() {
-        if (testCasesActual == null || testCasesActual.length > 0) {
+    public Map<ExecutionStatus, List<TestCase>> getTestCasesToStatusMap() {
+        if (testCasesActual == null || testCasesActual.size() > 0) {
             getTestCases();
         } else {
             logger.error("No test cases found");
         }
-        this.testCasesToStatusMap = Arrays.stream(testCasesActual).collect(Collectors.toMap(TestCase::getExecutionStatus, Function.identity()));
+//        this.testCasesToStatusMap = Arrays.stream(testCasesActual).collect(Collectors.toMap(TestCase::getExecutionStatus, Function.identity()));
+        this.testCasesToStatusMap = testCasesActual.stream().collect(Collectors.groupingBy(TestCase::getExecutionStatus));
+        Arrays.stream(ExecutionStatus.values()).forEach(es->this.testCasesToStatusMap.putIfAbsent(es, new ArrayList<>()));
         getTestCasesNotRun();
         getTestCasesPassed();
         getTestCasesBlocked();
@@ -175,53 +196,48 @@ public class G3INCAR_API {
         return this.testCasesToStatusMap;
     }
 
-    public Map<ExecutionStatus, TestCase> updateTestCasesToStatusMap() {
+    public Map<ExecutionStatus, List<TestCase>> updateTestCasesToStatusMap() {
         testCasesActual = null;
         return getTestCasesToStatusMap();
     }
 
-    public TestCase[] getTestCasesNotRun() {
+    public List<TestCase> getTestCasesNotRun() {
+        if (this.testCasesToStatusMap == null || this.testCasesToStatusMap.isEmpty()){
+            getTestCasesToStatusMap();
+        }
+//        testCasesActualNotRun = this.testCasesToStatusMap.values().stream()
+//                .filter(tc-> (tc.getExecutionStatus() == ExecutionStatus.NOT_RUN))
+//                .toArray(TestCase[]::new);
+        testCasesActualNotRun = testCasesToStatusMap.get(ExecutionStatus.NOT_RUN);
+        testCasesActualNotRunNum = testCasesActualNotRun.size();
+        return testCasesActualNotRun;
+    }
+
+    public List<TestCase> getTestCasesPassed() {
         if (this.testCasesToStatusMap.isEmpty()){
             getTestCasesToStatusMap();
         }
-        testCasesActualNotRun = this.testCasesToStatusMap.values().stream()
-                .filter(tc-> (tc.getExecutionStatus() == ExecutionStatus.NOT_RUN))
-                .toArray(TestCase[]::new);
-        testCasesActualNotRunNum = testCasesActualNotRun.length;
-        return testCasesActualNotRun;
+        testCasesActualPassed = testCasesToStatusMap.get(ExecutionStatus.PASSED);
+        testCasesActualPassedNum = testCasesActualPassed.size();
+        return testCasesActualPassed;
     }
 
-    public TestCase[] getTestCasesPassed() {
-        if (this.testCasesToStatusMap.isEmpty()){
-            getTestCasesToStatusMap();
-        }
-        testCasesActualNotRun = this.testCasesToStatusMap.values().stream()
-                .filter(tc-> (tc.getExecutionStatus() == ExecutionStatus.PASSED))
-                .toArray(TestCase[]::new);
-        testCasesActualNotRunNum = testCasesActualNotRun.length;
-        return testCasesActualNotRun;
-    }
-
-    public TestCase[] getTestCasesBlocked() {
+    public List<TestCase> getTestCasesBlocked() {
         if (this.testCasesToStatusMap.isEmpty()) {
             getTestCasesToStatusMap();
         }
-        testCasesActualNotRun = this.testCasesToStatusMap.values().stream()
-                .filter(tc-> (tc.getExecutionStatus() == ExecutionStatus.BLOCKED))
-                .toArray(TestCase[]::new);
-        testCasesActualNotRunNum = testCasesActualNotRun.length;
-        return testCasesActualNotRun;
+        testCasesActualBlocked = testCasesToStatusMap.get(ExecutionStatus.BLOCKED);
+        testCasesActualBlockedNum = testCasesActualBlocked.size();
+        return testCasesActualBlocked;
     }
 
-    public TestCase[] getTestCasesFailed() {
+    public List<TestCase> getTestCasesFailed() {
         if (this.testCasesToStatusMap.isEmpty()) {
             getTestCasesToStatusMap();
         }
-        testCasesActualNotRun = this.testCasesToStatusMap.values().stream()
-                .filter(tc-> (tc.getExecutionStatus() == ExecutionStatus.FAILED))
-                .toArray(TestCase[]::new);
-        testCasesActualNotRunNum = testCasesActualNotRun.length;
-        return testCasesActualNotRun;
+        testCasesActualFailed = testCasesToStatusMap.get(ExecutionStatus.FAILED);
+        testCasesActualFailedNum = testCasesActualFailed.size();
+        return testCasesActualFailed;
     }
 
 
@@ -251,7 +267,7 @@ public class G3INCAR_API {
 
     public Map<String, TestCase> getSummaries() {
 
-        Map<Integer, String> ids = Arrays.stream(this.testCasesActual)
+        Map<Integer, String> ids = testCasesActual.stream()
                 .collect(Collectors.toMap(TestCase::getId, TestCase::getFullExternalId));
 
         return ids.entrySet().parallelStream()
@@ -259,7 +275,7 @@ public class G3INCAR_API {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    public Map<TestSuite, TestCase[]> getTestSuitesPerTestCases(){
+    public Map<TestSuite, List<TestCase>> getTestSuitesPerTestCases(){
         TestSuite[] testSuits = this.getTestSuits();
         return Arrays.asList(testSuits).parallelStream()
                 .map(this::getTestSuiteEntry).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -267,12 +283,12 @@ public class G3INCAR_API {
 
     public Map<TestSuiteCustom, TestCaseCustom[]> getTestSuitesPerTestCasesCustom(){
         return getTestSuitesPerTestCases().entrySet().stream().collect(Collectors.toMap(e-> new TestSuiteCustom(e.getKey())
-                , e -> Arrays.stream(e.getValue()).map(TestCaseCustom::new).toArray(TestCaseCustom[]::new)));
+                , e -> e.getValue().stream().map(TestCaseCustom::new).toArray(TestCaseCustom[]::new)));
     }
 
     public Map<String, String[]> getTestSuitesPerTestCasesCustomStr(){
         return getTestSuitesPerTestCases().entrySet().stream().collect(Collectors.toMap(e-> new TestSuiteCustom(e.getKey()).toString()
-                , e -> Arrays.stream(e.getValue()).map(TestCase::toString).toArray(String[]::new)));
+                , e -> e.getValue().stream().map(TestCase::toString).toArray(String[]::new)));
     }
 
 
@@ -283,34 +299,25 @@ public class G3INCAR_API {
 
 
         Instant startTimer = Instant.now();
-        HashMap<TestSuite, TestCase[]> res = new HashMap<>(g3INCAR_api.getTestSuitesPerTestCases());
 
-//        Arrays.stream(testSuits).map((TestSuite ts, TestCase[] tcs) -> g3INCAR_api.api.getTestCasesForTestSuite(ts.getId(), true, null)).collect(Collectors.toMap(TestSuite))
-//        Arrays.stream(testSuits).collect(Collectors.toMap(testSuits, g3INCAR_api.api.getTestCasesForTestSuite(ts.getId(), true, null), Function.identity()))
-
-
-
-//        getSummaries_performance();
+//        HashMap<TestSuite, TestCase[]> res = new HashMap<>(g3INCAR_api.getTestSuitesPerTestCases());
 //
-        // all + Failed (19 tests) = 51 sec (only failed 15sec) // all (1790) + passed (1771)
+////
 
-//        g3INCAR_api.api.getTestCaseByExternalId("G3INCAR-TC-33444873", null);
-//        g3INCAR_api.api.getTestCasesForTestSuite()
-        // I am TERMINATOR!!!!! //
-//        Arrays.stream(tcs).
+        g3INCAR_api.getTestCasesToStatusMap();
+        logger.info("test cases not run:" + g3INCAR_api.getTestCasesActualFailedNum());
+        logger.info("test cases passed:" + g3INCAR_api.getTestCasesActualPassedNum());
+        logger.info("test cases failed:" + g3INCAR_api.getTestCasesActualFailedNum());
+        logger.info("test cases blocked:" + g3INCAR_api.getTestCasesActualBlockedNum());
 
-
-//        g3INCAR_api.getTestCases();
-//        TestCase[] tcs = g3INCAR_api.getTestCasesFailed();
-//        TestCase tc_one = tcs[0];
         logger.info("after getSummaries " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()) +
                 " took " + Duration.between(Instant.now(), startTimer).getSeconds() + "sec");
         logger.info("finish");
 
     }
 
-    private Map.Entry<TestSuite, TestCase[]> getTestSuiteEntry(TestSuite ts) {
-        TestCase[] tcs = this.getTestCasesPerTestSuite(ts);
+    private Map.Entry<TestSuite, List<TestCase>> getTestSuiteEntry(TestSuite ts) {
+        List<TestCase> tcs = this.getTestCasesPerTestSuite(ts);
         return Map.entry(ts, tcs);
     }
 
@@ -323,7 +330,7 @@ public class G3INCAR_API {
         logger.info("before getTestCasesFailed " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()));
         getTestCases();
 //        List<String> ids = Arrays.stream(g3INCAR_api.testCasesActual).map(TestCase::getFullExternalId).collect(Collectors.toList());
-        Map<Integer, String> ids = Arrays.stream(testCasesActual).collect(Collectors.toMap(TestCase::getId, TestCase::getFullExternalId));
+        Map<Integer, String> ids = testCasesActual.stream().collect(Collectors.toMap(TestCase::getId, TestCase::getFullExternalId));
         logger.info("after getTestCasesFailed " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()));
         Map<String, TestCase> summaries = getSummaries();
         summaries.forEach((key, value) -> logger.info(key + ":" + value.toString()));
