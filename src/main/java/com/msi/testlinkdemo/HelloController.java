@@ -1,7 +1,9 @@
 package com.msi.testlinkdemo;
 
 import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
-import com.msi.testlinkBack.G3INCAR_API;
+import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
+import com.msi.testlinkBack.API;
+import com.msi.testlinkBack.TestProjectApi;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -16,43 +18,88 @@ import java.util.Map;
 
 
 public class HelloController {
-    private static final Logger logger = LoggerFactory.getLogger(G3INCAR_API.class.getSimpleName());
-    G3INCAR_API g3INCAR_api;
+    private static final Logger logger = LoggerFactory.getLogger(API.class.getSimpleName());
 
-    public HelloController() {
+    API testLinkTool;
+    TestProjectApi testProjectApi;
+
+    public HelloController() throws MalformedURLException {
         try {
-            g3INCAR_api = new G3INCAR_API().chooseProject("G3INCAR");
+            testLinkTool = new API();
         } catch (MalformedURLException e) {
             logger.error(Arrays.toString(Arrays.stream(e.getStackTrace()).toArray()));
         }
+        testLinkTool = new API();
     }
 
     @FXML
-    private ComboBox<String> testPlanBox;
+    private ComboBox<String> testProjectListBox;
+
+    @FXML
+    private ComboBox<String> testPlanListBox;
+
+    @FXML
+    public TextField executionStatusNums;
 
     @FXML
     private ListView<String> tcsNames;
 
 //    @FXML
 //    TreeView<String> testPlanView;
-    @FXML
-    StackPane root;
 
     @FXML
-    protected void onAppearance() {
-        testPlanBox.setVisibleRowCount(5);
-        TestPlan[] testPlans = g3INCAR_api.getTestPlans();
+    StackPane testSuitsTreePane;
+
+    @FXML
+    protected void onAppearanceSetProject() {
+        testProjectListBox.setVisibleRowCount(5);
+        TestProject[] testProjects = testLinkTool.getAllProjects();
+        ObservableList<String> testProjectList = FXCollections.observableArrayList();
+
+        Arrays.stream(testProjects).forEach(tpr -> {
+            logger.info("adding Test project: " + tpr.toString());
+            testProjectList.add(tpr.getName());
+        });
+        testProjectListBox.setItems(testProjectList);
+        testProjectListBox.setOnAction((event) -> {
+            String selectedItem = testProjectListBox.getSelectionModel().getSelectedItem();
+            if (selectedItem != null) testLinkTool.chooseProject(selectedItem);
+            logger.info("selected test project = " + selectedItem);
+            //TODO get test plan
+        });
+
+//        TestProject[] testPlans = testLinkTool.getAllProjects();
+//        ObservableList<String> testPlansList = FXCollections.observableArrayList();
+//        Arrays.stream(testPlans).forEach(tp -> {
+//            logger.info("adding testPlan: " + tp.toString());
+//            testPlansList.add(tp.getName());
+//        });
+//        tcPerTestSuite.setItems(testPlansList);
+//        tcPerTestSuite.setOnAction((event) -> {
+//            tcPerTestSuite.getSelectionModel().getSelectedIndex();
+//            String selectedItem = tcPerTestSuite.getSelectionModel().getSelectedItem();
+//            if (selectedItem != null) testLinkTool.chooseTestPlan(selectedItem);
+//            logger.info("selected test plan="+selectedItem);
+//            updateTestCaseExecutionStatus();
+//        });
+
+    }
+
+    @FXML
+    protected void onAppearanceSetTestPlan() {
+        testPlanListBox.setVisibleRowCount(5);
+        TestPlan[] testPlans = testLinkTool.getTestPlans();
         ObservableList<String> testPlansList = FXCollections.observableArrayList();
         Arrays.stream(testPlans).forEach(tp -> {
             logger.info("adding testPlan: " + tp.toString());
             testPlansList.add(tp.getName());
         });
-        testPlanBox.setItems(testPlansList);
-        testPlanBox.setOnAction((event) -> {
-            testPlanBox.getSelectionModel().getSelectedIndex();
-            String selectedItem = testPlanBox.getSelectionModel().getSelectedItem();
-            if (selectedItem != null) g3INCAR_api.chooseTestPlan(selectedItem);
-            logger.info("selected test plan="+selectedItem);
+        testPlanListBox.setItems(testPlansList);
+        testPlanListBox.setOnAction((event) -> {
+            String selectedItem = testPlanListBox.getSelectionModel().getSelectedItem();
+            if (selectedItem != null) testLinkTool.chooseTestPlan(selectedItem);
+            logger.info("selected test plan = " + selectedItem);
+            updateTestCaseExecutionStatus();
         });
     }
 
@@ -60,20 +107,26 @@ public class HelloController {
 
     @FXML
     protected void onGetTestCasesClick() {
-        assert g3INCAR_api != null;
-        g3INCAR_api.chooseTestPlan("Manual ECN - 1.0.12");
-        g3INCAR_api.getTestCasesToStatusMap();
-        List<String> tcs = g3INCAR_api.getSummariesAndStatus();
-        ObservableList<String> items = FXCollections.observableArrayList(tcs);
-        tcsNames.setItems(items);
-        logger.info("onGetTestCasesClick is done");
+        assert testLinkTool != null;
+//        g3INCAR_api.chooseTestPlan("Manual ECN - 1.0.12");
+        if (testLinkTool.getTestPlanName() != null) {
+            testLinkTool.getTestCasesToStatusMap();
+            List<String> tcs = testLinkTool.getSummariesAndStatus();
+            ObservableList<String> items = FXCollections.observableArrayList(tcs);
+            tcsNames.setItems(items);
+
+            updateTestCaseExecutionStatus();
+            logger.info("onGetTestCasesClick is done");
+        } else {
+            logger.error("choose test plan before requesting test cases");
+        }
     }
 
     @FXML
     protected void onGetTestSuitsAndCasesClick(){
-        assert g3INCAR_api != null;
+        assert testLinkTool != null;
 
-        Map<String, String[]> testSuitesPerTestCases = g3INCAR_api.getTestSuitesPerTestCasesCustomStr();
+        Map<String, String[]> testSuitesPerTestCases = testLinkTool.getTestSuitesPerTestCasesCustomStr();
 //        logger.info("num of test suits="+testSuitesPerTestCases.entrySet().size());
 //        logger.info("Found suites num= " + testSuitesPerTestCases.keySet().size());
 //
@@ -88,17 +141,17 @@ public class HelloController {
         TreeItem<String> testCasesTree = createTestCasesTree(testSuitesPerTestCases);
         if (testCasesTree != null) {
             TreeView<String> testPlanView = new TreeView<>(createTestCasesTree(testSuitesPerTestCases));
-            root.getChildren().add(testPlanView);
-
+            testSuitsTreePane.getChildren().add(testPlanView);
+            updateTestCaseExecutionStatus();
         }
 
     }
 
 
     private  TreeItem<String> createTestCasesTree(Map<String, String[]> map){
-        String testPlanName = g3INCAR_api.getTestPlanName();
+        String testPlanName = testLinkTool.getTestPlanName();
         if (testPlanName != null) {
-            TreeItem<String> testCasesTree = new TreeItem<>(g3INCAR_api.getTestPlanName());
+            TreeItem<String> testCasesTree = new TreeItem<>(testLinkTool.getTestPlanName());
             map.forEach((suite, value) -> {
                 TreeItem<String> suiteItem = new TreeItem<>(suite);
                 Arrays.stream(value).forEach(tc -> suiteItem.getChildren().add(new TreeItem<>(tc))
@@ -111,6 +164,14 @@ public class HelloController {
             logger.error("set test plan before");
         }
         return null;
+    }
+
+    private void updateTestCaseExecutionStatus(){
+        testLinkTool.getTestCasesToStatusMap();
+        executionStatusNums.setText("Passed: " + testLinkTool.getTestCasesActualPassedNum() +
+                " Not run: " + testLinkTool.getTestCasesActualNotRunNum() +
+                " Failed: " + testLinkTool.getTestCasesActualFailedNum() +
+                " Blocked: " + testLinkTool.getTestCasesActualBlockedNum());
     }
 
     /// Attempt to use Table  ///

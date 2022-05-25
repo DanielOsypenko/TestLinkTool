@@ -12,6 +12,8 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.control.ComboBox?>
 <?import java.lang.String?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
 <VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.msi.testlinkdemo.HelloController">
     <padding>
@@ -20,13 +22,19 @@
 
 <!--    <Button text="GetTestCases" onAction="#onHelloButtonClick"/>-->
 <!--    <Label fx:id="testCasesDemo"/>-->
-    <ComboBox fx:id="testPlanBox" onShowing="#onAppearance">
+    <ComboBox fx:id="testProjectListBox" onShowing="#onAppearanceSetProject" >
+        <value>
+            <String fx:value="Test Project" />
+        </value>
+    </ComboBox>
+    <ComboBox fx:id="testPlanListBox" onShowing="#onAppearanceSetTestPlan" >
         <value>
             <String fx:value="Test Plan" />
         </value>
     </ComboBox>
+    <TextField fx:id="executionStatusNums" alignment="top_right" />
     <Button text="GetTestSuites" onAction="#onGetTestSuitsAndCasesClick"/>
-    <StackPane fx:id="root"/>
+    <StackPane fx:id="testSuitsTreePane"/>
     <Button text="GetTestCases" onAction="#onGetTestCasesClick"/>
     <ListView fx:id="tcsNames"/>
 

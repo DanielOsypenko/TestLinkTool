@@ -17,13 +17,11 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class G3INCAR_API {
-
-
+public class API {
 
     private final static String SERVER_URL = "http://testlink.watchguardvideo.local/lib/api/xmlrpc/v1/xmlrpc.php";
     private final static String DEV_KEY = "7f2baca03137da97cb6358d62737d0bd";
-    private static final Logger logger = LoggerFactory.getLogger(G3INCAR_API.class.getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(API.class.getSimpleName());
 
     TestLinkAPI api;
     TestProject G3INCARproject;
@@ -46,18 +44,18 @@ public class G3INCAR_API {
     private Map<ExecutionStatus, List<TestCase>> testCasesToStatusMap;
 
 
-    public G3INCAR_API() throws MalformedURLException {
+    public API() throws MalformedURLException {
         api = new TestLinkAPI(new URL(SERVER_URL), DEV_KEY);
     }
 
 
-    public G3INCAR_API chooseProject(String projectName) {
+    public API chooseProject(String projectName) {
         this.projectName = projectName;
         this.G3INCARproject = api.getTestProjectByName(projectName);
         return this;
     }
 
-    public G3INCAR_API chooseTestPlan(String planName) {
+    public API chooseTestPlan(String planName) {
         this.testPlan = api.getTestPlanByName(planName, projectName);
         this.testPlanId = testPlan.getId();
         this.testPlanName = planName;
@@ -71,7 +69,7 @@ public class G3INCAR_API {
         return api;
     }
 
-    public G3INCAR_API chooseTestSuite(List<Integer> testSuiteIds) {
+    public API chooseTestSuite(List<Integer> testSuiteIds) {
         this.testSuite = api.getTestSuiteByID(testSuiteIds);
         return this;
     }
@@ -88,9 +86,6 @@ public class G3INCAR_API {
         return api.getProjectTestPlans(G3INCARproject.getId());
     }
 
-    public TestSuite[] getTestSuits(int testPlanId) {
-        return api.getTestSuitesForTestPlan(testPlanId);
-    }
 
     public TestSuite[] getTestSuits() {
         chooseTestPlan(this.projectName, this.testPlanName);
@@ -181,11 +176,12 @@ public class G3INCAR_API {
     }
 
     public Map<ExecutionStatus, List<TestCase>> getTestCasesToStatusMap() {
-        if (testCasesActual == null || testCasesActual.size() > 0) {
-            getTestCases();
-        } else {
-            logger.error("No test cases found");
-        }
+//        if (testCasesActual == null || testCasesActual.size() > 0) {
+//            getTestCases();
+//        } else {
+//            logger.error("No test cases found");
+//        }
+        getTestCases();
 //        this.testCasesToStatusMap = Arrays.stream(testCasesActual).collect(Collectors.toMap(TestCase::getExecutionStatus, Function.identity()));
         this.testCasesToStatusMap = testCasesActual.stream().collect(Collectors.groupingBy(TestCase::getExecutionStatus));
         Arrays.stream(ExecutionStatus.values()).forEach(es->this.testCasesToStatusMap.putIfAbsent(es, new ArrayList<>()));
@@ -196,10 +192,6 @@ public class G3INCAR_API {
         return this.testCasesToStatusMap;
     }
 
-    public Map<ExecutionStatus, List<TestCase>> updateTestCasesToStatusMap() {
-        testCasesActual = null;
-        return getTestCasesToStatusMap();
-    }
 
     public List<TestCase> getTestCasesNotRun() {
         if (this.testCasesToStatusMap == null || this.testCasesToStatusMap.isEmpty()){
@@ -294,7 +286,7 @@ public class G3INCAR_API {
 
     public static void main(String[] args) throws MalformedURLException {
 
-        G3INCAR_API g3INCAR_api = new G3INCAR_API().chooseProject("G3INCAR");
+        API g3INCAR_api = new API().chooseProject("G3INCAR");
         g3INCAR_api.chooseTestPlan("Manual ECN - 1.0.11");
 
 
