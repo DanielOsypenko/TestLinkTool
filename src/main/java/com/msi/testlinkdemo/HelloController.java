@@ -2,7 +2,7 @@ package com.msi.testlinkdemo;
 
 import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
 import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
-import com.msi.testlinkBack.TestPlanApi;
+import com.msi.testlinkBack.api.TestPlanApi;
 import com.msi.testlinkBack.ToolManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

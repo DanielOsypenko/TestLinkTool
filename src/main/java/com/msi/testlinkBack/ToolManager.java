@@ -1,11 +1,8 @@
 package com.msi.testlinkBack;
 
 import br.eti.kinoshita.testlinkjavaapi.TestLinkAPI;
-import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
-import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
-import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
 import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
-import br.eti.kinoshita.testlinkjavaapi.model.TestSuite;
+import com.msi.testlinkBack.api.TestProjectApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +12,6 @@ import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ToolManager {
 
