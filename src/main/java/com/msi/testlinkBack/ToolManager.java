@@ -17,14 +17,15 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class API {
+public class ToolManager {
 
     private final static String SERVER_URL = "http://testlink.watchguardvideo.local/lib/api/xmlrpc/v1/xmlrpc.php";
     private final static String DEV_KEY = "7f2baca03137da97cb6358d62737d0bd";
-    private static final Logger logger = LoggerFactory.getLogger(API.class.getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
 
     TestLinkAPI api;
-    TestProject G3INCARproject;
+    TestProjectApi testProjectApi;
+//    TestProject G3INCARproject;
     String projectName;
     TestPlan testPlan;
     String testPlanName;
@@ -43,19 +44,41 @@ public class API {
     int testCasesActualFailedNum;
     private Map<ExecutionStatus, List<TestCase>> testCasesToStatusMap;
 
+    public static ToolManager toolManager;
 
-    public API() throws MalformedURLException {
-        api = new TestLinkAPI(new URL(SERVER_URL), DEV_KEY);
+    public ToolManager(){
+        try {
+            api = new TestLinkAPI(new URL(SERVER_URL), DEV_KEY);
+        } catch (MalformedURLException e) {
+            logger.error(Arrays.toString(e.getStackTrace()));
+        }
     }
 
+    public static ToolManager getManager(){
+        if (toolManager == null){
+            toolManager = new ToolManager();
+        }
+        return toolManager;
+    }
 
-    public API chooseProject(String projectName) {
+//    public ToolManager() throws MalformedURLException {
+//        api = new TestLinkAPI(new URL(SERVER_URL), DEV_KEY);
+//    }
+
+
+//    public API chooseProject(String projectName) {
+//        this.projectName = projectName;
+//        this.G3INCARproject = api.getTestProjectByName(projectName);
+//        return this;
+//    }
+
+    public ToolManager chooseProject(String projectName) {
         this.projectName = projectName;
-        this.G3INCARproject = api.getTestProjectByName(projectName);
+        this.testProjectApi = new TestProjectApi(this.projectName);
         return this;
     }
 
-    public API chooseTestPlan(String planName) {
+    public ToolManager chooseTestPlan(String planName) {
         this.testPlan = api.getTestPlanByName(planName, projectName);
         this.testPlanId = testPlan.getId();
         this.testPlanName = planName;
@@ -69,7 +92,7 @@ public class API {
         return api;
     }
 
-    public API chooseTestSuite(List<Integer> testSuiteIds) {
+    public ToolManager chooseTestSuite(List<Integer> testSuiteIds) {
         this.testSuite = api.getTestSuiteByID(testSuiteIds);
         return this;
     }
@@ -83,9 +106,8 @@ public class API {
     }
 
     public TestPlan[] getTestPlans() {
-        return api.getProjectTestPlans(G3INCARproject.getId());
+        return api.getProjectTestPlans(testProjectApi.getProject().getId());
     }
-
 
     public TestSuite[] getTestSuits() {
         chooseTestPlan(this.projectName, this.testPlanName);
@@ -286,7 +308,7 @@ public class API {
 
     public static void main(String[] args) throws MalformedURLException {
 
-        API g3INCAR_api = new API().chooseProject("G3INCAR");
+        ToolManager g3INCAR_api = new ToolManager().chooseProject("G3INCAR");
         g3INCAR_api.chooseTestPlan("Manual ECN - 1.0.11");
 
 

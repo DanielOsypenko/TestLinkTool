@@ -2,8 +2,7 @@ package com.msi.testlinkdemo;
 
 import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
 import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
-import com.msi.testlinkBack.API;
-import com.msi.testlinkBack.TestProjectApi;
+import com.msi.testlinkBack.ToolManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -18,20 +17,18 @@ import java.util.Map;
 
 
 public class HelloController {
-    private static final Logger logger = LoggerFactory.getLogger(API.class.getSimpleName());
+    private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
 
-    API testLinkTool;
-    TestProjectApi testProjectApi;
+    ToolManager testLinkTool;
 
-    public HelloController() throws MalformedURLException {
+    public HelloController() {
         try {
-            testLinkTool = new API();
+            testLinkTool = new ToolManager();
         } catch (MalformedURLException e) {
             logger.error(Arrays.toString(Arrays.stream(e.getStackTrace()).toArray()));
         }
-        testLinkTool = new API();
     }
-
+    // TODO: place testProjectListBox and testPlanListBox on the same line
     @FXML
     private ComboBox<String> testProjectListBox;
 
@@ -44,8 +41,6 @@ public class HelloController {
     @FXML
     private ListView<String> tcsNames;
 
-//    @FXML
-//    TreeView<String> testPlanView;
 
     @FXML
     StackPane testSuitsTreePane;
