@@ -1,0 +1,26 @@
+
+.root {
+    -fx-background-color: AliceBlue;
+    -fx-font-size: 12pt;
+}
+
+#testProjectListHBox {
+    -fx-padding: 2;
+}
+#testProjectListBox {
+    -fx-min-width: 300;
+}
+
+#testPlanListHBox {
+    -fx-padding: 2;
+}
+#testPlanListBox {
+    -fx-min-width: 300;
+}
+#testSuitsPaneVbox {
+    -fx-padding: 0;
+}
+#testSuitsTreePane {
+    -fx-font-size: 10pt;
+}
+

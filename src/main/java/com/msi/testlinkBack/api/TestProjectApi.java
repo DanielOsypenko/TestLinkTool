@@ -30,11 +30,11 @@ public class TestProjectApi {
         return this;
     }
 
-    TestProject getProject() {
+    public TestProject getProject() {
         return project;
     }
 
-    String getProjectName() {
+    public String getProjectName() {
         return projectName;
     }
 
