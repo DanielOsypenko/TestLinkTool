@@ -32,9 +32,11 @@
 
     <TextField fx:id="executionStatusNums" alignment="top_right"/>
 
-    <HBox alignment="TOP_LEFT">
+
+    <HBox fx:id="suiteButtons" alignment="TOP_LEFT">
         <Button text="GetTestSuites" fx:id="getTestSuitesBtn" onAction="#onGetTestSuitsAndCasesClick"/>
-        <Button text="GetSelected" fx:id="getTestCasesSelectedBtn" onAction="#onGetTestCasesSelected"/>
+        <Button text="GetSelected-TMP" fx:id="getTestCasesSelectedBtn" onAction="#onGetTestCasesSelected"/>
+        <Button fx:id="expandListBtn" onAction="#onExpandList"/>
     </HBox>
     <VBox fx:id="testSuitsPaneVbox">
         <ListView fx:id="testSuitsListView">

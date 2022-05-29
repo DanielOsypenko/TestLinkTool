@@ -53,6 +53,11 @@ public class Controller implements Initializable {
     @FXML
     public Button getTestCasesSelectedBtn;
 
+    String expandText = "Expand";
+    String collapseText = "Collapse";
+    @FXML
+    public Button expandListBtn;
+
     @FXML
     public TextField executionStatusNums;
 
@@ -61,13 +66,17 @@ public class Controller implements Initializable {
 
     @FXML
     private StackPane testSuitsTreePane;
+    TreeItem<String> testCasesTree;
 
     private TreeView<String> testPlanView;
+
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         testPlanListBox.setDisable(true);
         getTestSuitesBtn.setDisable(true);
+        expandListBtn.setText(expandText);
+        expandListBtn.setDisable(true);
 
     }
 
@@ -160,13 +169,16 @@ public class Controller implements Initializable {
         // TODO - update exec status before marking status with balls in the list
         //updateTestCaseExecutionStatus();
 
-        TreeItem<String> testCasesTree = createTestCasesTree(testSuitesPerTestCases);
+        testCasesTree = createTestCasesTree(testSuitesPerTestCases);
         if (testCasesTree != null) {
             testCasesTree.setExpanded(true);
             testPlanView = new TreeView<>(testCasesTree);
             testPlanView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             testSuitsTreePane.getChildren().add(testPlanView);
             updateTestCaseExecutionStatus();
+            expandListBtn.setDisable(testCasesTree.getChildren().size() <= 0);
+        } else {
+            expandListBtn.setDisable(true);
         }
     }
 
@@ -233,5 +245,16 @@ public class Controller implements Initializable {
                 " Blocked: " + testPlanApi.getTestCasesActualBlockedNum());
     }
 
-
+    @FXML
+    public void onExpandList() {
+        if (this.testCasesTree != null && this.testCasesTree.getChildren().size() > 0){
+            if (expandListBtn.getText().equals(expandText)) {
+                testCasesTree.getChildren().forEach(stringTreeItem -> stringTreeItem.setExpanded(true));
+                expandListBtn.setText(collapseText);
+            } else if (expandListBtn.getText().equals(collapseText)) {
+                testCasesTree.getChildren().forEach(stringTreeItem -> stringTreeItem.setExpanded(false));
+                expandListBtn.setText(expandText);
+            }
+        }
+    }
 }
