@@ -1,37 +1,38 @@
 package com.msi.testlinkdemo;
 
+import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
 import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
 import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
-import com.msi.testlinkBack.api.TestPlanApi;
+import br.eti.kinoshita.testlinkjavaapi.model.TestSuite;
 import com.msi.testlinkBack.ToolManager;
+import com.msi.testlinkBack.api.TestPlanApi;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.effect.ColorAdjust;
+import javafx.scene.effect.Light;
+import javafx.scene.effect.Lighting;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.Border;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Paint;
+import javafx.scene.paint.Color;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
-public class HelloController implements Initializable {
+public class Controller implements Initializable {
     private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
 
     ToolManager toolManager;
-    public HelloController() {
+    public Controller() {
         toolManager = ToolManager.getManager();
     }
 
@@ -48,7 +49,7 @@ public class HelloController implements Initializable {
     private ComboBox<String> testPlanListBox;
 
     @FXML
-    public Button getTestSuites;
+    public Button getTestSuitesBtn;
 
     @FXML
     public TextField executionStatusNums;
@@ -57,12 +58,14 @@ public class HelloController implements Initializable {
     private ListView<String> tcsNames;
 
     @FXML
-    StackPane testSuitsTreePane;
+    private StackPane testSuitsTreePane;
+
+    private TreeView<String> testPlanView;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         testPlanListBox.setDisable(true);
-        getTestSuites.setDisable(true);
+        getTestSuitesBtn.setDisable(true);
 
     }
 
@@ -106,9 +109,9 @@ public class HelloController implements Initializable {
                     toolManager.getTestProjectApi().chooseTestPlan(selectedItem);
                     logger.info("selected test plan = " + selectedItem);
                     updateTestCaseExecutionStatus();
-                    getTestSuites.setDisable(false);
+                    getTestSuitesBtn.setDisable(false);
                 } else {
-                    getTestSuites.setDisable(true);
+                    getTestSuitesBtn.setDisable(true);
                 }
             });
         } else {
@@ -116,13 +119,23 @@ public class HelloController implements Initializable {
         }
     }
 
+    @FXML
+    public List<String> onGetTestCasesSelected() {
+        List<String> chosenItems = testPlanView.getSelectionModel().getSelectedItems().stream().map(TreeItem::getValue).collect(Collectors.toList());
+        logger.info("Chosen test cases:");
+        for (String chosenItem : chosenItems) {
+            logger.info(chosenItem);
+        }
+        return chosenItems;
+    }
 
+    // currently turned off. gives the list of all Test Cases items
     @FXML
     protected void onGetTestCasesClick() {
         assert toolManager != null;
         TestPlanApi testPlanApi = toolManager.getTestProjectApi().getTestPlanApi();
         if (testPlanApi.getTestPlanName() != null) {
-            toolManager.getTestProjectApi().getTestPlanApi().getTestCasesToStatusMap();
+            toolManager.getTestProjectApi().getTestPlanApi().getTestCasesAndSetExecutionStatusToTestCaseMap(false);
             List<String> tcs = testPlanApi.getSummariesAndStatus();
             ObservableList<String> items = FXCollections.observableArrayList(tcs);
             tcsNames.setItems(items);
@@ -137,48 +150,60 @@ public class HelloController implements Initializable {
     @FXML
     protected void onGetTestSuitsAndCasesClick() {
         assert toolManager != null;
-        Map<String, String[]> testSuitesPerTestCases = toolManager
+        Map<TestSuite, List<TestCase>> testSuitesPerTestCases = toolManager
                 .getTestProjectApi()
                 .getTestPlanApi()
-                .getTestSuitesPerTestCasesCustomStr();
+                .getTestSuitesPerTestCases();
 
         // TODO - update exec status before marking status with balls in the list
         //updateTestCaseExecutionStatus();
 
         TreeItem<String> testCasesTree = createTestCasesTree(testSuitesPerTestCases);
         if (testCasesTree != null) {
-            TreeView<String> testPlanView = new TreeView<>(createTestCasesTree(testSuitesPerTestCases));
+            testCasesTree.setExpanded(true);
+            testPlanView = new TreeView<>(testCasesTree);
+            testPlanView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             testSuitsTreePane.getChildren().add(testPlanView);
             updateTestCaseExecutionStatus();
         }
-
     }
 
-    private final Node rootIcon =  new ImageView(new Image(this.getClass().getResourceAsStream("/red_ball_50.png")));
-
-    private TreeItem<String> createTestCasesTree(Map<String, String[]> map) {
-//        set colored icon
-
-
-
+    private TreeItem<String> createTestCasesTree(Map<TestSuite, List<TestCase>> mapWithSummaries) {
         TestPlanApi testPlanApi = toolManager.getTestProjectApi().getTestPlanApi();
+
         String testPlanName = testPlanApi.getTestPlanName();
         if (testPlanName != null) {
             TreeItem<String> testCasesTree = new TreeItem<>(testPlanName);
-            map.forEach((suite, value) -> {
-                TreeItem<String> suiteItem = new TreeItem<>(suite);
 
+            // mapWithSummaries has test cases with suits and summaries and has all test cases
+            // any map from test plan has only execution status and id and has only test cases associated with test plan
+            mapWithSummaries = testPlanApi.filterMapWithSummaries(mapWithSummaries);
 
-                Arrays.stream(value).forEach(tc -> {
-                            TreeItem<String> tcItem = new TreeItem<>(tc);
-                            Node rootIcon =new ImageView(new Image(this.getClass().getResourceAsStream("/red_ball_50.png")));
-//                            rootIcon.setStyle("-fx-padding: 0; -fx-start-margin: 0; -fx-end-margin: 0;");
-                            tcItem.setGraphic(rootIcon);
+            mapWithSummaries.forEach((suite, testCases) -> {
+                TreeItem<String> suiteItem = new TreeItem<>(suite.getName());
+
+                testCases.forEach(tcInitial -> {
+                            TreeItem<String> tcItem = new TreeItem<>(tcInitial.getFullExternalId() + ":" + tcInitial.getName());
+                            ImageView execStatusBallImageView = new ImageView(new Image(Objects.requireNonNull(this.getClass().getResourceAsStream("/status_ball.png"))));
+
+                            execStatusBallImageView.setFitHeight(20);
+                            execStatusBallImageView.setFitWidth(20);
+
+                            if (testPlanApi.getTestCasesFailed().stream().anyMatch(tc -> tc.getId().equals(tcInitial.getId()))) {
+                                setColorToImageView(execStatusBallImageView, Color.RED);
+                            } else if (testPlanApi.getTestCasesNotRun().stream().anyMatch(tc -> tc.getId().equals(tcInitial.getId()))){
+                                setColorToImageView(execStatusBallImageView, Color.GRAY);
+                            } else if (testPlanApi.getTestCasesPassed().stream().anyMatch(tc -> tc.getId().equals(tcInitial.getId()))){
+                                setColorToImageView(execStatusBallImageView, Color.GREEN);
+                            } else if (testPlanApi.getTestCasesBlocked().stream().anyMatch(tc -> tc.getId().equals(tcInitial.getId()))) {
+                                setColorToImageView(execStatusBallImageView, Color.BLUE);
+                            }
+
+                            tcItem.setGraphic(execStatusBallImageView);
 
                             suiteItem.getChildren().add(tcItem);
                         }
                 );
-//                Arrays.stream(value).forEach(tc -> suiteItem.getChildren().add(new TreeItem<>(tc)));
                 testCasesTree.getChildren().add(suiteItem);
             });
             return testCasesTree;
@@ -189,9 +214,17 @@ public class HelloController implements Initializable {
         return null;
     }
 
+    private void setColorToImageView(ImageView execStatusBallImageView, Color color) {
+        Lighting lighting = new Lighting(new Light.Distant(45, 90, color));
+        ColorAdjust bright = new ColorAdjust(0,1,1,1);
+        lighting.setContentInput(bright);
+        lighting.setSurfaceScale(0.0);
+        execStatusBallImageView.setEffect(lighting);
+    }
+
     private void updateTestCaseExecutionStatus() {
         TestPlanApi testPlanApi = toolManager.getTestProjectApi().getTestPlanApi();
-        testPlanApi.getTestCasesToStatusMap();
+        testPlanApi.getTestCasesAndSetExecutionStatusToTestCaseMap(true);
         executionStatusNums.setText("Passed: " + testPlanApi.getTestCasesActualPassedNum() +
                 " Not run: " + testPlanApi.getTestCasesActualNotRunNum() +
                 " Failed: " + testPlanApi.getTestCasesActualFailedNum() +

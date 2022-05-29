@@ -70,21 +70,23 @@ public class TestPlanApi {
         return null;
     }
 
-    public List<TestCase> getTestCases() {
+    public List<TestCase> getTestCasesForTestPlan(boolean update) {
         if (ToolManager.getManager().getTestProjectApi().getProjectName() != null && this.testPlanName != null) {
-            this.testCasesActual = Arrays.asList(api.getTestCasesForTestPlan(
-                    this.testPlanId
-                    , null
-                    , null
-                    , null
-                    , null
-                    , null
-                    , null
-                    , null
-                    , null
-                    , null
-                    , null));
-            this.testCasesActualNum = testCasesActual.size();
+            if (update) {
+                this.testCasesActual = Arrays.asList(api.getTestCasesForTestPlan(
+                        this.testPlanId
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null));
+                this.testCasesActualNum = testCasesActual.size();
+            }
         } else {
             logger.error("Can not get test cases. Set projectName && testPlanName");
         }
@@ -94,21 +96,19 @@ public class TestPlanApi {
 
     public List<TestCase> getTestCasesByExecStatus(ExecutionStatus executionStatus) {
         if (testCasesActual == null || testCasesActual.size() > 0) {
-            getTestCases();
+            getTestCasesForTestPlan(true);
         } else {
             logger.error("No test cases found");
         }
         return testCasesActual.stream().filter(tc -> (tc.getExecutionStatus() == executionStatus)).collect(Collectors.toList());
     }
 
-    public Map<ExecutionStatus, List<TestCase>> getTestCasesToStatusMap() {
-//        if (testCasesActual == null || testCasesActual.size() > 0) {
-//            getTestCases();
-//        } else {
-//            logger.error("No test cases found");
-//        }
-        getTestCases();
-//        this.testCasesToStatusMap = Arrays.stream(testCasesActual).collect(Collectors.toMap(TestCase::getExecutionStatus, Function.identity()));
+    public Map<ExecutionStatus, List<TestCase>> getTestCasesAndSetExecutionStatusToTestCaseMap(boolean update) {
+        getTestCasesForTestPlan(update);
+        return getExecutionStatusToTestCasesMap();
+    }
+
+    private Map<ExecutionStatus, List<TestCase>> getExecutionStatusToTestCasesMap() {
         this.testCasesToStatusMap = testCasesActual.stream().collect(Collectors.groupingBy(TestCase::getExecutionStatus));
         Arrays.stream(ExecutionStatus.values()).forEach(es->this.testCasesToStatusMap.putIfAbsent(es, new ArrayList<>()));
         getTestCasesNotRun();
@@ -120,7 +120,7 @@ public class TestPlanApi {
 
     public List<TestCase> getTestCasesNotRun() {
         if (this.testCasesToStatusMap == null || this.testCasesToStatusMap.isEmpty()){
-            getTestCasesToStatusMap();
+            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
         }
         testCasesActualNotRun = testCasesToStatusMap.get(ExecutionStatus.NOT_RUN);
         testCasesActualNotRunNum = testCasesActualNotRun.size();
@@ -129,7 +129,7 @@ public class TestPlanApi {
 
     public List<TestCase> getTestCasesPassed() {
         if (this.testCasesToStatusMap.isEmpty()){
-            getTestCasesToStatusMap();
+            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
         }
         testCasesActualPassed = testCasesToStatusMap.get(ExecutionStatus.PASSED);
         this.testCasesActualPassedNum = testCasesActualPassed.size();
@@ -138,7 +138,7 @@ public class TestPlanApi {
 
     public List<TestCase> getTestCasesBlocked() {
         if (this.testCasesToStatusMap.isEmpty()) {
-            getTestCasesToStatusMap();
+            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
         }
         testCasesActualBlocked = testCasesToStatusMap.get(ExecutionStatus.BLOCKED);
         testCasesActualBlockedNum = testCasesActualBlocked.size();
@@ -147,7 +147,7 @@ public class TestPlanApi {
 
     public List<TestCase> getTestCasesFailed() {
         if (this.testCasesToStatusMap.isEmpty()) {
-            getTestCasesToStatusMap();
+            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
         }
         testCasesActualFailed = testCasesToStatusMap.get(ExecutionStatus.FAILED);
         testCasesActualFailedNum = testCasesActualFailed.size();
@@ -195,6 +195,7 @@ public class TestPlanApi {
         return Map.entry(ts, tcs);
     }
 
+    // Get the map with summaries
     public Map<TestSuite, List<TestCase>> getTestSuitesPerTestCases(){
         TestSuite[] testSuits = this.testProjectApi.getTestPlanApi().getTestSuits();
         return Arrays.asList(testSuits).parallelStream()
@@ -216,7 +217,7 @@ public class TestPlanApi {
         Instant startTimer = Instant.now();
 
         logger.info("before getTestCasesFailed " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()));
-        getTestCases();
+        getTestCasesForTestPlan(true);
 //        List<String> ids = Arrays.stream(g3INCAR_api.testCasesActual).map(TestCase::getFullExternalId).collect(Collectors.toList());
         Map<Integer, String> ids = testCasesActual.stream().collect(Collectors.toMap(TestCase::getId, TestCase::getFullExternalId));
         logger.info("after getTestCasesFailed " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()));
@@ -226,4 +227,19 @@ public class TestPlanApi {
 //                " took " + Duration.between(Instant.now(), startTimer).getSeconds() + "sec");
         return summaries.values().stream().map(TestCase::toString).collect(Collectors.toList());
     }
+
+    /*   The map with summaries always contains more test cases than Test plan.
+     To get a test plan user chooses from all test cases
+     Method is a helper to create map with only relevant test cases from the test plan, but with summaries.
+     @return the ma
+     */
+    public Map<TestSuite, List<TestCase>> filterMapWithSummaries(Map<TestSuite, List<TestCase>> mapWithSummaries) {
+        List<Integer> idsFromTestPlanTestCases = getTestCasesForTestPlan(false)
+                .stream().map(TestCase::getId).collect(Collectors.toList());
+        mapWithSummaries.entrySet().forEach(entry ->
+                entry.setValue(entry.getValue().stream().filter(tc -> idsFromTestPlanTestCases.contains(tc.getId())).collect(Collectors.toList()))
+        );
+        return mapWithSummaries;
+    }
+
 }

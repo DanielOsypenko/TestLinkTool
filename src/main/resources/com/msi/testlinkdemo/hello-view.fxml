@@ -7,7 +7,7 @@
 
 
 <VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.msi.testlinkdemo.HelloController" fx:id="main">
+      fx:controller="com.msi.testlinkdemo.Controller" fx:id="main">
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
     </padding>
@@ -32,15 +32,18 @@
 
     <TextField fx:id="executionStatusNums" alignment="top_right"/>
 
-    <Button text="GetTestSuites" fx:id="getTestSuites" onAction="#onGetTestSuitsAndCasesClick"/>
+    <VBox alignment="TOP_LEFT">
+        <Button text="GetTestSuites" fx:id="getTestSuitesBtn" onAction="#onGetTestSuitsAndCasesClick"/>
+        <Button text="GetSelected" fx:id="getTestCasesSelectedBtn" onAction="#onGetTestCasesSelected"/>
+    </VBox>
     <VBox fx:id="testSuitsPaneVbox">
         <ListView fx:id="testSuitsListView">
-            <StackPane fx:id="testSuitsTreePane" />
+            <StackPane fx:id="testSuitsTreePane"/>
         </ListView>
     </VBox>
-    <Button text="GetTestCases" onAction="#onGetTestCasesClick"/>
-    <VBox fx:id="testCaseNamesPaneVbox">
-        <ListView fx:id="tcsNames"/>
-    </VBox>
+<!--    <Button text="GetTestCases" onAction="#onGetTestCasesClick"/>-->
+<!--    <VBox fx:id="testCaseNamesPaneVbox">-->
+<!--        <ListView fx:id="tcsNames"/>-->
+<!--    </VBox>-->
 
 </VBox>

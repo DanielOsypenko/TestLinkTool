@@ -87,7 +87,7 @@ public class ToolManager {
 
         Instant startTimer = Instant.now();
 
-        testProjectApi.getTestPlanApi().getTestCasesToStatusMap();
+        testProjectApi.getTestPlanApi().getTestCasesAndSetExecutionStatusToTestCaseMap(true);
         logger.info("test cases not run:" + testProjectApi.getTestPlanApi().getTestCasesActualFailedNum());
         logger.info("test cases passed:" + testProjectApi.getTestPlanApi().getTestCasesActualPassedNum());
         logger.info("test cases failed:" + testProjectApi.getTestPlanApi().getTestCasesActualFailedNum());
