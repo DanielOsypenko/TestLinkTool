@@ -6,13 +6,13 @@ import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
 import com.msi.testlinkBack.api.TestProjectApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Calendar;
 
 public class ToolManager {
 
@@ -85,18 +85,20 @@ public class ToolManager {
         TestProjectApi testProjectApi = ToolManager.getManager().chooseProject("G3INCAR");
         testProjectApi.chooseTestPlan("ECN Automation");
         testProjectApi.getTestPlanApi().getTestCasesAndSetExecutionStatusToTestCaseMap(true);
-        testProjectApi.getTestPlanApi().reportResult(ExecutionStatus.NOT_RUN, 26523);
+        Instant startTimer = Instant.now();
+        Integer[] testIds = new Integer[]{26735, 26737, 26741, 26743,26745};
+        testProjectApi.getTestPlanApi().reportResult(ExecutionStatus.PASSED, testIds);
 //        ToolManager.getManager().api.reportTCResult(null,G3INCAR-TC-1807)
 
-//        Instant startTimer = Instant.now();
+
 //
 //        logger.info("test cases not run:" + testProjectApi.getTestPlanApi().getTestCasesActualFailedNum());
 //        logger.info("test cases passed:" + testProjectApi.getTestPlanApi().getTestCasesActualPassedNum());
 //        logger.info("test cases failed:" + testProjectApi.getTestPlanApi().getTestCasesActualFailedNum());
 //        logger.info("test cases blocked:" + testProjectApi.getTestPlanApi().getTestCasesActualBlockedNum());
 //
-//        logger.info("after getSummaries " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()) +
-//                " took " + Duration.between(Instant.now(), startTimer).getSeconds() + "sec");
+        logger.info("after getSummaries " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()) +
+                " took " + Duration.between(Instant.now(), startTimer).getSeconds() + "sec");
 //
 
 

@@ -8,12 +8,13 @@ import com.msi.testlinkBack.TestSuiteCustom;
 import com.msi.testlinkBack.ToolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class TestPlanApi {
@@ -266,24 +267,40 @@ public class TestPlanApi {
         return reportResult(executionStatus, null, null , testCaseIds);
     }
 
+    /* The base Method to sent reports to TestLink service
+        Method sends post requests simultaneously and awaits for all the executors finish in max of 20 sec timeout
+    * */
     public ConcurrentLinkedQueue <ReportTCResultResponse> reportResult(ExecutionStatus executionStatus
             , Map<String, String> customFields
             , String notes
             , Integer... testCaseIds){
+
+        ExecutorService executionService = Executors.newCachedThreadPool();
         for (Integer testCaseId: testCaseIds) {
-            Executors.newCachedThreadPool().execute(()-> reportTCResultResponse.add(api.reportTCResult(testCaseId
-                    , null
-                    , getTestPlanId()
-                    , executionStatus
-                    , getBuildIdLast()
-                    , null
-                    , notes
-                    , null
-                    , null
-                    , null
-                    , null
-                    , customFields
-                    , null)));
+            executionService.submit(() -> {
+                ReportTCResultResponse reportRes = api.reportTCResult(testCaseId
+                        , null
+                        , getTestPlanId()
+                        , executionStatus
+                        , getBuildIdLast()
+                        , null
+                        , notes
+                        , null
+                        , null
+                        , null
+                        , null
+                        , customFields
+                        , null);
+                reportTCResultResponse.add(reportRes);
+                logger.info("report result for tc-id " + testCaseId + ": \n\t" + reportRes.getMessage());
+            });
+        }
+        executionService.shutdown();
+        try {
+            boolean tasksLeft = executionService.awaitTermination(20, TimeUnit.SECONDS);
+            logger.info("all reports sent: " + tasksLeft);
+        } catch (InterruptedException e) {
+            logger.error("execute report results interrupted: " + Arrays.toString(e.getStackTrace()));
         }
         return reportTCResultResponse;
     }
