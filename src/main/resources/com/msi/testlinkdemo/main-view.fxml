@@ -32,10 +32,10 @@
 
     <TextField fx:id="executionStatusNums" alignment="top_right"/>
 
-    <VBox alignment="TOP_LEFT">
+    <HBox alignment="TOP_LEFT">
         <Button text="GetTestSuites" fx:id="getTestSuitesBtn" onAction="#onGetTestSuitsAndCasesClick"/>
         <Button text="GetSelected" fx:id="getTestCasesSelectedBtn" onAction="#onGetTestCasesSelected"/>
-    </VBox>
+    </HBox>
     <VBox fx:id="testSuitsPaneVbox">
         <ListView fx:id="testSuitsListView">
             <StackPane fx:id="testSuitsTreePane"/>

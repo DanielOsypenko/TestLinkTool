@@ -8,7 +8,6 @@ import com.msi.testlinkBack.ToolManager;
 import com.msi.testlinkBack.api.TestPlanApi;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -52,6 +51,9 @@ public class Controller implements Initializable {
     public Button getTestSuitesBtn;
 
     @FXML
+    public Button getTestCasesSelectedBtn;
+
+    @FXML
     public TextField executionStatusNums;
 
     @FXML
@@ -92,7 +94,7 @@ public class Controller implements Initializable {
 
     @FXML
     protected void onAppearanceSetTestPlan() {
-        if (toolManager.getTestProjectApi()!= null && toolManager.getTestProjectApi().getProject() != null) {
+        if (toolManager.getTestProjectApi()!= null && toolManager.getTestProjectApi().getTestProject() != null) {
             testPlanListBox.setVisibleRowCount(5);
             TestPlan[] testPlans = toolManager.getTestProjectApi().getTestPlans();
             ObservableList<String> testPlansList = FXCollections.observableArrayList();

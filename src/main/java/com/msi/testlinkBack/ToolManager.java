@@ -1,6 +1,7 @@
 package com.msi.testlinkBack;
 
 import br.eti.kinoshita.testlinkjavaapi.TestLinkAPI;
+import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
 import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
 import com.msi.testlinkBack.api.TestProjectApi;
 import org.slf4j.Logger;
@@ -82,19 +83,25 @@ public class ToolManager {
     public static void main(String[] args) {
 
         TestProjectApi testProjectApi = ToolManager.getManager().chooseProject("G3INCAR");
-        testProjectApi.chooseTestPlan("Manual ECN - 1.0.11");
-
-
-        Instant startTimer = Instant.now();
-
+        testProjectApi.chooseTestPlan("ECN Automation");
         testProjectApi.getTestPlanApi().getTestCasesAndSetExecutionStatusToTestCaseMap(true);
-        logger.info("test cases not run:" + testProjectApi.getTestPlanApi().getTestCasesActualFailedNum());
-        logger.info("test cases passed:" + testProjectApi.getTestPlanApi().getTestCasesActualPassedNum());
-        logger.info("test cases failed:" + testProjectApi.getTestPlanApi().getTestCasesActualFailedNum());
-        logger.info("test cases blocked:" + testProjectApi.getTestPlanApi().getTestCasesActualBlockedNum());
+        testProjectApi.getTestPlanApi().reportResult(ExecutionStatus.NOT_RUN, 26523);
+//        ToolManager.getManager().api.reportTCResult(null,G3INCAR-TC-1807)
 
-        logger.info("after getSummaries " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()) +
-                " took " + Duration.between(Instant.now(), startTimer).getSeconds() + "sec");
+//        Instant startTimer = Instant.now();
+//
+//        logger.info("test cases not run:" + testProjectApi.getTestPlanApi().getTestCasesActualFailedNum());
+//        logger.info("test cases passed:" + testProjectApi.getTestPlanApi().getTestCasesActualPassedNum());
+//        logger.info("test cases failed:" + testProjectApi.getTestPlanApi().getTestCasesActualFailedNum());
+//        logger.info("test cases blocked:" + testProjectApi.getTestPlanApi().getTestCasesActualBlockedNum());
+//
+//        logger.info("after getSummaries " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()) +
+//                " took " + Duration.between(Instant.now(), startTimer).getSeconds() + "sec");
+//
+
+
+
+
         logger.info("finish");
 
     }

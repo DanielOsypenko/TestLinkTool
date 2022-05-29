@@ -13,25 +13,25 @@ import java.util.stream.Collectors;
 public class TestProjectApi {
 
     private final TestLinkAPI api;
-    private TestProject project;
+    private TestProject testProject;
     private String projectName;
     private TestPlanApi testPlanApi;
     private static final Logger logger = LoggerFactory.getLogger(TestLinkAPI.class.getSimpleName());
 
     public TestProjectApi(String projectName) {
         this.api = ToolManager.getManager().getApi();
-        this.setProject(projectName);
+        this.setTestProject(projectName);
     }
 
-    TestProjectApi setProject(String projectName) {
+    TestProjectApi setTestProject(String projectName) {
         this.projectName = projectName;
-        this.project = api.getTestProjectByName(projectName);
+        this.testProject = api.getTestProjectByName(projectName);
         logger.info("set project " + projectName);
         return this;
     }
 
-    public TestProject getProject() {
-        return project;
+    public TestProject getTestProject() {
+        return testProject;
     }
 
     public String getProjectName() {
@@ -39,7 +39,7 @@ public class TestProjectApi {
     }
 
     public TestPlan[] getTestPlans() {
-        return api.getProjectTestPlans(project.getId());
+        return api.getProjectTestPlans(testProject.getId());
     }
 
     public List<String> getTestPlanNames() {
@@ -48,7 +48,8 @@ public class TestProjectApi {
 
     public TestPlanApi chooseTestPlan(String planName){
         this.testPlanApi = new TestPlanApi();
-        return this.testPlanApi.setTestPlan(planName);
+        this.testPlanApi.setTestPlan(planName);
+        return testPlanApi;
     }
 
     public TestPlanApi getTestPlanApi() {

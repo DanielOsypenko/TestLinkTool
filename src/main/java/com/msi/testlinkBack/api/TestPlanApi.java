@@ -2,9 +2,7 @@ package com.msi.testlinkBack.api;
 
 import br.eti.kinoshita.testlinkjavaapi.TestLinkAPI;
 import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
-import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
-import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
-import br.eti.kinoshita.testlinkjavaapi.model.TestSuite;
+import br.eti.kinoshita.testlinkjavaapi.model.*;
 import com.msi.testlinkBack.TestCaseCustom;
 import com.msi.testlinkBack.TestSuiteCustom;
 import com.msi.testlinkBack.ToolManager;
@@ -14,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class TestPlanApi {
@@ -35,6 +35,9 @@ public class TestPlanApi {
     int testCasesActualPassedNum;
     int testCasesActualBlockedNum;
     int testCasesActualFailedNum;
+    Build[] builds;
+    private Integer buildIdLast;
+    ConcurrentLinkedQueue <ReportTCResultResponse> reportTCResultResponse = new ConcurrentLinkedQueue<>();
 
     public TestPlanApi() {
         ToolManager manager = ToolManager.getManager();
@@ -46,7 +49,16 @@ public class TestPlanApi {
         this.testPlan = api.getTestPlanByName(planName, testProjectApi.getProjectName());
         this.testPlanId = testPlan.getId();
         this.testPlanName = testPlan.getName();
+        Executors.newCachedThreadPool().execute(() -> this.setBuilds(api.getBuildsForTestPlan(this.testPlanId)));
         return this;
+    }
+
+    public void setBuilds(Build[] builds) {
+        this.builds = builds;
+        if (this.builds != null && this.builds.length > 0){
+            this.buildIdLast = builds[builds.length-1].getId();
+            logger.info("builds for Test plan '" + this.getTestPlanName() + "' found: " + builds.length);
+        }
     }
 
     public TestPlan getTestPlan() {
@@ -68,6 +80,14 @@ public class TestPlanApi {
             logger.error("Can not get test suits. Choose Test Plan before");
         }
         return null;
+    }
+
+    public Build[] getBuilds() {
+        return builds;
+    }
+
+    public Integer getBuildIdLast() {
+        return buildIdLast;
     }
 
     public List<TestCase> getTestCasesForTestPlan(boolean update) {
@@ -242,4 +262,29 @@ public class TestPlanApi {
         return mapWithSummaries;
     }
 
+    public ConcurrentLinkedQueue <ReportTCResultResponse> reportResult(ExecutionStatus executionStatus, Integer... testCaseIds){
+        return reportResult(executionStatus, null, null , testCaseIds);
+    }
+
+    public ConcurrentLinkedQueue <ReportTCResultResponse> reportResult(ExecutionStatus executionStatus
+            , Map<String, String> customFields
+            , String notes
+            , Integer... testCaseIds){
+        for (Integer testCaseId: testCaseIds) {
+            Executors.newCachedThreadPool().execute(()-> reportTCResultResponse.add(api.reportTCResult(testCaseId
+                    , null
+                    , getTestPlanId()
+                    , executionStatus
+                    , getBuildIdLast()
+                    , null
+                    , notes
+                    , null
+                    , null
+                    , null
+                    , null
+                    , customFields
+                    , null)));
+        }
+        return reportTCResultResponse;
+    }
 }
