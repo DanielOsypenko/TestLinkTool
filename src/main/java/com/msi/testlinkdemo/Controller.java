@@ -1,5 +1,6 @@
 package com.msi.testlinkdemo;
 
+import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
 import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
 import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
 import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
@@ -20,8 +21,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import org.controlsfx.control.textfield.CustomTextField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -55,11 +58,27 @@ public class Controller implements Initializable {
 
     String expandText = "Expand";
     String collapseText = "Collapse";
+
     @FXML
     public Button expandListBtn;
 
     @FXML
-    public TextField executionStatusNums;
+    public Button reportBtn;
+
+//    @FXML
+//    public TextField executionStatusNums;
+
+    @FXML
+    public CustomTextField executionStatusNumsPass;
+
+    @FXML
+    public CustomTextField executionStatusNumsFailed;
+
+    @FXML
+    public CustomTextField executionStatusNumsNotRun;
+
+    @FXML
+    public CustomTextField executionStatusNumsBlocked;
 
     @FXML
     private ListView<String> tcsNames;
@@ -78,6 +97,23 @@ public class Controller implements Initializable {
         expandListBtn.setText(expandText);
         expandListBtn.setDisable(true);
 
+
+        List <CustomTextField> statusFields = List.of(executionStatusNumsPass
+                , executionStatusNumsNotRun
+                , executionStatusNumsNotRun
+                , executionStatusNumsBlocked);
+        executionStatusNumsPass.setLeft(getStatusBallImageView(Color.GREEN));
+        executionStatusNumsPass.setPromptText("Passed");
+        executionStatusNumsNotRun.setLeft(getStatusBallImageView(Color.GRAY));
+        executionStatusNumsNotRun.setPromptText("Not run");
+        executionStatusNumsFailed.setLeft(getStatusBallImageView(Color.RED));
+        executionStatusNumsFailed.setPromptText("Failed");
+        executionStatusNumsBlocked.setLeft(getStatusBallImageView(Color.BLUE));
+        executionStatusNumsBlocked.setPromptText("Blocked");
+        statusFields.forEach(cf -> cf.setEditable(false));
+
+
+        reportBtn.setDisable(true);
     }
 
     @FXML
@@ -93,6 +129,8 @@ public class Controller implements Initializable {
         });
         testProjectListBox.setItems(testProjectList);
         testProjectListBox.setOnAction((event) -> {
+            testPlanListBox.setDisable(true);
+            refreshStatusNumBar();
             String selectedItem = testProjectListBox.getSelectionModel().getSelectedItem();
             if (selectedItem != null) toolManager.chooseProject(selectedItem);
             logger.info("selected test project = " + selectedItem);
@@ -114,7 +152,10 @@ public class Controller implements Initializable {
 
             testPlanListBox.setItems(testPlansList);
             testPlanListBox.setOnAction((event) -> {
-                testPlanListBox.setDisable(false);
+
+                // TODO: remove previous valuefrom the list when new Project was selected
+
+               // testPlanListBox.setDisable(false);
                 String selectedItem = testPlanListBox.getSelectionModel().getSelectedItem();
                 if (selectedItem != null) {
                     toolManager.getTestProjectApi().chooseTestPlan(selectedItem);
@@ -132,7 +173,22 @@ public class Controller implements Initializable {
 
     @FXML
     public List<String> onGetTestCasesSelected() {
-        List<String> chosenItems = testPlanView.getSelectionModel().getSelectedItems().stream().map(TreeItem::getValue).collect(Collectors.toList());
+//        testPlanView.getSelectionModel().selectedItemProperty().addListener((options, oldValue, newValue) -> {
+//            logger.info(">>>>>>>>>>>>>>>>>> 1");
+//
+//            if(newValue != null && newValue != oldValue){
+//                logger.info("Hello World");
+//            }
+
+//            if (!oldValue.equals(newValue)) {
+//                reportBtn.setDisable(false);
+//                logger.info(">>>>>>>>>>>>>>>>>> 2");
+//            } else {
+//                reportBtn.setDisable(true);
+//            }
+//        });
+        List<String> chosenItems = testPlanView.getSelectionModel().getSelectedItems().stream()
+                .map(TreeItem::getValue).collect(Collectors.toList());
         logger.info("Chosen test cases:");
         for (String chosenItem : chosenItems) {
             logger.info(chosenItem);
@@ -166,9 +222,6 @@ public class Controller implements Initializable {
                 .getTestPlanApi()
                 .getTestSuitesPerTestCases();
 
-        // TODO - update exec status before marking status with balls in the list
-        //updateTestCaseExecutionStatus();
-
         testCasesTree = createTestCasesTree(testSuitesPerTestCases);
         if (testCasesTree != null) {
             testCasesTree.setExpanded(true);
@@ -180,6 +233,16 @@ public class Controller implements Initializable {
         } else {
             expandListBtn.setDisable(true);
         }
+        // listener for enabling Report button
+        testPlanView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null && newValue != oldValue && newValue.isLeaf()) {
+                reportBtn.setDisable(false);
+            } else if (newValue != null && oldValue == newValue) {
+                reportBtn.setDisable(true);
+            } else {
+                reportBtn.setDisable(true);
+            }
+        });
     }
 
     private TreeItem<String> createTestCasesTree(Map<TestSuite, List<TestCase>> mapWithSummaries) {
@@ -200,8 +263,9 @@ public class Controller implements Initializable {
                             TreeItem<String> tcItem = new TreeItem<>(tcInitial.getFullExternalId() + ":" + tcInitial.getName());
                             ImageView execStatusBallImageView = new ImageView(new Image(Objects.requireNonNull(this.getClass().getResourceAsStream("/status_ball.png"))));
 
-                            execStatusBallImageView.setFitHeight(20);
-                            execStatusBallImageView.setFitWidth(20);
+
+                            execStatusBallImageView.setFitHeight(18);
+                            execStatusBallImageView.setFitWidth(18);
 
                             if (testPlanApi.getTestCasesFailed().stream().anyMatch(tc -> tc.getId().equals(tcInitial.getId()))) {
                                 setColorToImageView(execStatusBallImageView, Color.RED);
@@ -228,21 +292,42 @@ public class Controller implements Initializable {
         return null;
     }
 
-    private void setColorToImageView(ImageView execStatusBallImageView, Color color) {
+    private ImageView setColorToImageView(ImageView execStatusBallImageView, Color color) {
         Lighting lighting = new Lighting(new Light.Distant(45, 90, color));
         ColorAdjust bright = new ColorAdjust(0,1,1,1);
         lighting.setContentInput(bright);
         lighting.setSurfaceScale(0.0);
         execStatusBallImageView.setEffect(lighting);
+        return execStatusBallImageView;
+    }
+
+    private ImageView getStatusBallImageView(Color color){
+        ImageView execStatusBallImageView = new ImageView(
+                new Image(Objects.requireNonNull(this.getClass().getResourceAsStream("/status_ball.png"))));
+        execStatusBallImageView.setFitWidth(18);
+        execStatusBallImageView.setFitHeight(18);
+        return setColorToImageView(execStatusBallImageView, color);
     }
 
     private void updateTestCaseExecutionStatus() {
         TestPlanApi testPlanApi = toolManager.getTestProjectApi().getTestPlanApi();
         testPlanApi.getTestCasesAndSetExecutionStatusToTestCaseMap(true);
-        executionStatusNums.setText("Passed: " + testPlanApi.getTestCasesActualPassedNum() +
-                " Not run: " + testPlanApi.getTestCasesActualNotRunNum() +
-                " Failed: " + testPlanApi.getTestCasesActualFailedNum() +
-                " Blocked: " + testPlanApi.getTestCasesActualBlockedNum());
+//        executionStatusNums.setText("Passed: " + testPlanApi.getTestCasesActualPassedNum() +
+//                " Not run: " + testPlanApi.getTestCasesActualNotRunNum() +
+//                " Failed: " + testPlanApi.getTestCasesActualFailedNum() +
+//                " Blocked: " + testPlanApi.getTestCasesActualBlockedNum());
+
+        executionStatusNumsPass.setText("Passed: " + testPlanApi.getTestCasesActualPassedNum());
+        executionStatusNumsNotRun.setText("Not run: " + testPlanApi.getTestCasesActualNotRunNum());
+        executionStatusNumsFailed.setText("Failed: " + testPlanApi.getTestCasesActualFailedNum());
+        executionStatusNumsBlocked.setText("Blocked: " + testPlanApi.getTestCasesActualBlockedNum());
+    }
+
+    private void refreshStatusNumBar(){
+        executionStatusNumsPass.setText("");
+        executionStatusNumsNotRun.setText("");
+        executionStatusNumsFailed.setText("");
+        executionStatusNumsBlocked.setText("");
     }
 
     @FXML
@@ -257,4 +342,31 @@ public class Controller implements Initializable {
             }
         }
     }
+
+    @FXML
+    public void onReportResults() {
+        ExecutionStatus execStatus = ExecutionStatus.PASSED;
+
+        List<String> chosenItems = testPlanView.getSelectionModel().getSelectedItems().stream()
+                .map(TreeItem::getValue).collect(Collectors.toList());
+        logger.info("Selected test cases:");
+        for (String chosenItem : chosenItems) {
+            logger.info(chosenItem);
+        }
+        List <String> externalFullIds = chosenItems.stream()
+                .map(tcStr -> tcStr.substring(0, tcStr.indexOf(":"))).collect(Collectors.toList());
+
+        // may be worth to optimize - find issue why all multiple chosen tests appears in list twice
+        // current solution .distinct()
+        List<Integer> idsSelected = toolManager.getTestProjectApi().getTestPlanApi().getAllTestCasesFromSuiteTree()
+                .stream().filter(tc -> externalFullIds.contains(tc.getFullExternalId()))
+                .map(TestCase::getId).distinct().collect(Collectors.toList());
+
+        if (idsSelected.size() > 0) {
+            toolManager.getTestProjectApi().getTestPlanApi()
+                    .reportResult(ExecutionStatus.PASSED, idsSelected.toArray(Integer[]::new));
+        }
+    }
+
+
 }

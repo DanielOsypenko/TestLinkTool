@@ -9,7 +9,7 @@ public class Application extends javafx.application.Application {
     @Override
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(Application.class.getResource("main-view.fxml"));
-        Scene scene = new Scene(fxmlLoader.load(), 640, 480);
+        Scene scene = new Scene(fxmlLoader.load(), 1028, 720);
         stage.setTitle("Test Link Tool");
         stage.setScene(scene);
         scene.getStylesheets().add("styles.css");

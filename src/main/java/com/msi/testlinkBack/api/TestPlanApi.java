@@ -304,4 +304,14 @@ public class TestPlanApi {
         }
         return reportTCResultResponse;
     }
+
+    public List<TestCase> getAllTestCasesFromSuiteTree() {
+        return this.getTestSuitesPerTestCases().values().stream().flatMap(List::stream)
+                .collect(Collectors.toList());
+    }
+
+    public List<Integer> getAllTestCaseIdsFromSuiteTree() {
+        return this.getTestSuitesPerTestCases().values().stream().flatMap(List::stream).map(tc->tc.getId())
+                .collect(Collectors.toList());
+    }
 }

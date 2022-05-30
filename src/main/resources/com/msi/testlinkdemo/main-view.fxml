@@ -6,6 +6,7 @@
 <?import java.lang.String?>
 
 
+<?import org.controlsfx.control.textfield.CustomTextField?>
 <VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.msi.testlinkdemo.Controller" fx:id="main">
     <padding>
@@ -28,15 +29,21 @@
                 </value>
             </ComboBox>
         </HBox>
+        <CustomTextField fx:id="executionStatusNumsPass"/>
+        <CustomTextField fx:id="executionStatusNumsNotRun"/>
+        <CustomTextField fx:id="executionStatusNumsFailed"/>
+        <CustomTextField fx:id="executionStatusNumsBlocked"/>
     </HBox>
 
-    <TextField fx:id="executionStatusNums" alignment="top_right"/>
+
 
 
     <HBox fx:id="suiteButtons" alignment="TOP_LEFT">
         <Button text="GetTestSuites" fx:id="getTestSuitesBtn" onAction="#onGetTestSuitsAndCasesClick"/>
         <Button text="GetSelected-TMP" fx:id="getTestCasesSelectedBtn" onAction="#onGetTestCasesSelected"/>
         <Button fx:id="expandListBtn" onAction="#onExpandList"/>
+        <Button text="Report" fx:id="reportBtn" onAction="#onReportResults"/>
+
     </HBox>
     <VBox fx:id="testSuitsPaneVbox">
         <ListView fx:id="testSuitsListView">
