@@ -17,66 +17,77 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class TestPlanApi {
+public class TestPlanApi extends TestPlanListener {
 
     private TestLinkAPI api;
-    private TestProjectApi testProjectApi;
+    TestProjectApi testProjectApi;
     private TestPlan testPlan;
-    private Integer testPlanId;
-    private String testPlanName;
-    private static final Logger logger = LoggerFactory.getLogger(TestPlanApi.class.getSimpleName());
-    private Map<ExecutionStatus, List<TestCase>> testCasesToStatusMap;
-    List<TestCase> testCasesActual = null;
-    List<TestCase> testCasesActualNotRun = null;
-    List<TestCase> testCasesActualPassed = null;
-    List<TestCase> testCasesActualBlocked = null;
-    List<TestCase> testCasesActualFailed = null;
-    int testCasesActualNum;
-    int testCasesActualNotRunNum;
-    int testCasesActualPassedNum;
-    int testCasesActualBlockedNum;
-    int testCasesActualFailedNum;
-    Build[] builds;
-    private Integer buildIdLast;
+//    private Integer testPlanId;
+//    private String testPlanName;
+//    static final Logger logger = LoggerFactory.getLogger(TestPlanApi.class.getSimpleName());
+//    Map<ExecutionStatus, List<TestCase>> testCasesToStatusMap;
+//    List<TestCase> testCasesActual = null;
+//    List<TestCase> testCasesActualNotRun = null;
+//    List<TestCase> testCasesActualPassed = null;
+//    List<TestCase> testCasesActualBlocked = null;
+//    List<TestCase> testCasesActualFailed = null;
+//    int testCasesActualNum;
+//    int testCasesActualNotRunNum;
+//    int testCasesActualPassedNum;
+//    int testCasesActualBlockedNum;
+//    int testCasesActualFailedNum;
+
+//
+//    Build[] builds;
+//    private Integer buildIdLast;
+
+
     ConcurrentLinkedQueue <ReportTCResultResponse> reportTCResultResponse = new ConcurrentLinkedQueue<>();
 
     public TestPlanApi() {
+//        this.testPlanListener = ((TestPlanListener) this);
         ToolManager manager = ToolManager.getManager();
         this.api = manager.getApi();
         this.testProjectApi = manager.getTestProjectApi();
     }
 
-    public TestPlanApi setTestPlan(String planName) {
-        this.testPlan = api.getTestPlanByName(planName, testProjectApi.getProjectName());
-        this.testPlanId = testPlan.getId();
-        this.testPlanName = testPlan.getName();
-        Executors.newCachedThreadPool().execute(() -> this.setBuilds(api.getBuildsForTestPlan(this.testPlanId)));
-        return this;
-    }
+//    public TestPlanApi setTestPlan(String planName) {
+//        this.testPlan = api.getTestPlanByName(planName, testProjectApi.getProjectName());
+//        this.testPlanId = testPlan.getId();
+//        this.testPlanName = testPlan.getName();
+//        Executors.newCachedThreadPool().execute(() -> this.setBuilds(api.getBuildsForTestPlan(this.testPlanId)));
+////        Thread testPlanListenerThread = new Thread(this);
+////        testPlanListenerThread.start();
+//        return this;
+//    }
 
-    public void setBuilds(Build[] builds) {
-        this.builds = builds;
-        if (this.builds != null && this.builds.length > 0){
-            this.buildIdLast = builds[builds.length-1].getId();
-            logger.info("builds for Test plan '" + this.getTestPlanName() + "' found: " + builds.length);
-        }
-    }
+//    public void setBuilds(Build[] builds) {
+//        this.builds = builds;
+//        if (this.builds != null && this.builds.length > 0){
+//            this.buildIdLast = builds[builds.length-1].getId();
+//            logger.info("builds for Test plan '" + this.getTestPlanName() + "' found: " + builds.length);
+//        } else {
+//            logger.info("no builds for Test plan '" + this.getTestPlanName() + " found");
+//        }
+//    }
+
+
 
     public TestPlan getTestPlan() {
         return testPlan;
     }
 
-    public int getTestPlanId() {
-        return testPlanId;
-    }
-
-    public String getTestPlanName() {
-        return testPlanName;
-    }
-
+//    public int getTestPlanId() {
+//        return testPlanId;
+//    }
+//
+//    public String getTestPlanName() {
+//        return testPlanName;
+//    }
+//
     public TestSuite[] getTestSuits(){
         if (testPlanId != null){
-            return this.api.getTestSuitesForTestPlan(testPlan.getId());
+            return this.api.getTestSuitesForTestPlan(testPlanId);
         } else {
             logger.error("Can not get test suits. Choose Test Plan before");
         }
@@ -91,28 +102,28 @@ public class TestPlanApi {
         return buildIdLast;
     }
 
-    public List<TestCase> getTestCasesForTestPlan(boolean update) {
-        if (ToolManager.getManager().getTestProjectApi().getProjectName() != null && this.testPlanName != null) {
-            if (update) {
-                this.testCasesActual = Arrays.asList(api.getTestCasesForTestPlan(
-                        this.testPlanId
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null));
-                this.testCasesActualNum = testCasesActual.size();
-            }
-        } else {
-            logger.error("Can not get test cases. Set projectName && testPlanName");
-        }
-        return testCasesActual;
-    }
+//    public List<TestCase> getTestCasesForTestPlan(boolean update) {
+//        if (ToolManager.getManager().getTestProjectApi().getProjectName() != null && this.testPlanName != null) {
+//            if (update) {
+//                this.testCasesActual = Arrays.asList(api.getTestCasesForTestPlan(
+//                        this.testPlanId
+//                        , null
+//                        , null
+//                        , null
+//                        , null
+//                        , null
+//                        , null
+//                        , null
+//                        , null
+//                        , null
+//                        , null));
+//                this.testCasesActualNum = testCasesActual.size();
+//            }
+//        } else {
+//            logger.error("Can not get test cases. Set projectName && testPlanName");
+//        }
+//        return testCasesActual;
+//    }
 
 
     public List<TestCase> getTestCasesByExecStatus(ExecutionStatus executionStatus) {
@@ -124,56 +135,56 @@ public class TestPlanApi {
         return testCasesActual.stream().filter(tc -> (tc.getExecutionStatus() == executionStatus)).collect(Collectors.toList());
     }
 
-    public Map<ExecutionStatus, List<TestCase>> getTestCasesAndSetExecutionStatusToTestCaseMap(boolean update) {
-        getTestCasesForTestPlan(update);
-        return getExecutionStatusToTestCasesMap();
-    }
+//    synchronized public Map<ExecutionStatus, List<TestCase>> getTestCasesAndSetExecutionStatusToTestCaseMap(boolean update) {
+//        getTestCasesForTestPlan(update);
+//        return getExecutionStatusToTestCasesMap();
+//    }
+//
+//    private Map<ExecutionStatus, List<TestCase>> getExecutionStatusToTestCasesMap() {
+//        this.testCasesToStatusMap = testCasesActual.stream().collect(Collectors.groupingBy(TestCase::getExecutionStatus));
+//        Arrays.stream(ExecutionStatus.values()).forEach(es->this.testCasesToStatusMap.putIfAbsent(es, new ArrayList<>()));
+//        getTestCasesNotRun();
+//        getTestCasesPassed();
+//        getTestCasesBlocked();
+//        getTestCasesFailed();
+//        return this.testCasesToStatusMap;
+//    }
 
-    private Map<ExecutionStatus, List<TestCase>> getExecutionStatusToTestCasesMap() {
-        this.testCasesToStatusMap = testCasesActual.stream().collect(Collectors.groupingBy(TestCase::getExecutionStatus));
-        Arrays.stream(ExecutionStatus.values()).forEach(es->this.testCasesToStatusMap.putIfAbsent(es, new ArrayList<>()));
-        getTestCasesNotRun();
-        getTestCasesPassed();
-        getTestCasesBlocked();
-        getTestCasesFailed();
-        return this.testCasesToStatusMap;
-    }
-
-    public List<TestCase> getTestCasesNotRun() {
-        if (this.testCasesToStatusMap == null || this.testCasesToStatusMap.isEmpty()){
-            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
-        }
-        testCasesActualNotRun = testCasesToStatusMap.get(ExecutionStatus.NOT_RUN);
-        testCasesActualNotRunNum = testCasesActualNotRun.size();
-        return testCasesActualNotRun;
-    }
-
-    public List<TestCase> getTestCasesPassed() {
-        if (this.testCasesToStatusMap.isEmpty()){
-            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
-        }
-        testCasesActualPassed = testCasesToStatusMap.get(ExecutionStatus.PASSED);
-        this.testCasesActualPassedNum = testCasesActualPassed.size();
-        return testCasesActualPassed;
-    }
-
-    public List<TestCase> getTestCasesBlocked() {
-        if (this.testCasesToStatusMap.isEmpty()) {
-            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
-        }
-        testCasesActualBlocked = testCasesToStatusMap.get(ExecutionStatus.BLOCKED);
-        testCasesActualBlockedNum = testCasesActualBlocked.size();
-        return testCasesActualBlocked;
-    }
-
-    public List<TestCase> getTestCasesFailed() {
-        if (this.testCasesToStatusMap.isEmpty()) {
-            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
-        }
-        testCasesActualFailed = testCasesToStatusMap.get(ExecutionStatus.FAILED);
-        testCasesActualFailedNum = testCasesActualFailed.size();
-        return testCasesActualFailed;
-    }
+//    public List<TestCase> getTestCasesNotRun() {
+//        if (this.testCasesToStatusMap == null || this.testCasesToStatusMap.isEmpty()){
+//            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
+//        }
+//        testCasesActualNotRun = testCasesToStatusMap.get(ExecutionStatus.NOT_RUN);
+//        testCasesActualNotRunNum = testCasesActualNotRun.size();
+//        return testCasesActualNotRun;
+//    }
+//
+//    public List<TestCase> getTestCasesPassed() {
+//        if (this.testCasesToStatusMap.isEmpty()){
+//            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
+//        }
+//        testCasesActualPassed = testCasesToStatusMap.get(ExecutionStatus.PASSED);
+//        this.testCasesActualPassedNum = testCasesActualPassed.size();
+//        return testCasesActualPassed;
+//    }
+//
+//    public List<TestCase> getTestCasesBlocked() {
+//        if (this.testCasesToStatusMap.isEmpty()) {
+//            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
+//        }
+//        testCasesActualBlocked = testCasesToStatusMap.get(ExecutionStatus.BLOCKED);
+//        testCasesActualBlockedNum = testCasesActualBlocked.size();
+//        return testCasesActualBlocked;
+//    }
+//
+//    public List<TestCase> getTestCasesFailed() {
+//        if (this.testCasesToStatusMap.isEmpty()) {
+//            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
+//        }
+//        testCasesActualFailed = testCasesToStatusMap.get(ExecutionStatus.FAILED);
+//        testCasesActualFailedNum = testCasesActualFailed.size();
+//        return testCasesActualFailed;
+//    }
 
     public int getTestCasesActualNotRunNum() {
         return testCasesActualNotRunNum;
@@ -218,7 +229,7 @@ public class TestPlanApi {
 
     // Get the map with summaries
     public Map<TestSuite, List<TestCase>> getTestSuitesPerTestCases(){
-        TestSuite[] testSuits = this.testProjectApi.getTestPlanApi().getTestSuits();
+        TestSuite[] testSuits = testProjectApi.getTestPlanApi().getTestSuits();
         return Arrays.asList(testSuits).parallelStream()
                 .map(this::getTestSuiteEntry).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }

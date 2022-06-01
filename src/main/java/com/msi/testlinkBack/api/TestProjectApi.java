@@ -49,6 +49,8 @@ public class TestProjectApi {
     public TestPlanApi chooseTestPlan(String planName){
         this.testPlanApi = new TestPlanApi();
         this.testPlanApi.setTestPlan(planName);
+        Thread testPlanApiListenerThread = new Thread(this.testPlanApi);
+        testPlanApiListenerThread.start();
         return testPlanApi;
     }
 

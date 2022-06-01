@@ -55,7 +55,7 @@ public class ToolManager {
         return api.getProjects();
     }
 
-    public TestProjectApi getTestProjectApi() {
+    synchronized public TestProjectApi getTestProjectApi() {
         return testProjectApi;
     }
 

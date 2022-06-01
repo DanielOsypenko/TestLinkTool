@@ -7,8 +7,12 @@ import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
 import br.eti.kinoshita.testlinkjavaapi.model.TestSuite;
 import com.msi.testlinkBack.ToolManager;
 import com.msi.testlinkBack.api.TestPlanApi;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -21,6 +25,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.util.Duration;
 import org.controlsfx.control.textfield.CustomTextField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,7 +165,10 @@ public class Controller implements Initializable {
                 if (selectedItem != null) {
                     toolManager.getTestProjectApi().chooseTestPlan(selectedItem);
                     logger.info("selected test plan = " + selectedItem);
-                    updateTestCaseExecutionStatus();
+                    setUpdateTestResults();
+
+                    getTestSuitsAndCases();
+
                     getTestSuitesBtn.setDisable(false);
                 } else {
                     getTestSuitesBtn.setDisable(true);
@@ -169,6 +177,16 @@ public class Controller implements Initializable {
         } else {
             testPlanListBox.setDisable(true);
         }
+    }
+
+    /* Method to continuously update status of the execution
+    * */
+    void setUpdateTestResults(){
+        Timeline overTenSecUpdate = new Timeline(new KeyFrame(Duration.seconds(5), (ActionEvent event) -> {
+            updateTestCaseExecutionStatus();
+        }));
+        overTenSecUpdate.setCycleCount(Timeline.INDEFINITE);
+        overTenSecUpdate.play();
     }
 
     @FXML
@@ -197,51 +215,60 @@ public class Controller implements Initializable {
     }
 
     // currently turned off. gives the list of all Test Cases items
-    @FXML
-    protected void onGetTestCasesClick() {
-        assert toolManager != null;
-        TestPlanApi testPlanApi = toolManager.getTestProjectApi().getTestPlanApi();
-        if (testPlanApi.getTestPlanName() != null) {
-            toolManager.getTestProjectApi().getTestPlanApi().getTestCasesAndSetExecutionStatusToTestCaseMap(false);
-            List<String> tcs = testPlanApi.getSummariesAndStatus();
-            ObservableList<String> items = FXCollections.observableArrayList(tcs);
-            tcsNames.setItems(items);
-
-            updateTestCaseExecutionStatus();
-            logger.info("onGetTestCasesClick is done");
-        } else {
-            logger.error("choose test plan before requesting test cases");
-        }
-    }
+//    @FXML
+//    protected void onGetTestCasesClick() {
+//        assert toolManager != null;
+//        TestPlanApi testPlanApi = toolManager.getTestProjectApi().getTestPlanApi();
+//        if (testPlanApi.getTestPlanName() != null) {
+//            toolManager.getTestProjectApi().getTestPlanApi().getTestCasesAndSetExecutionStatusToTestCaseMap(false);
+//            List<String> tcs = testPlanApi.getSummariesAndStatus();
+//            ObservableList<String> items = FXCollections.observableArrayList(tcs);
+//            tcsNames.setItems(items);
+//
+//            updateTestCaseExecutionStatus();
+//            logger.info("onGetTestCasesClick is done");
+//        } else {
+//            logger.error("choose test plan before requesting test cases");
+//        }
+//    }
 
     @FXML
     protected void onGetTestSuitsAndCasesClick() {
-        assert toolManager != null;
-        Map<TestSuite, List<TestCase>> testSuitesPerTestCases = toolManager
-                .getTestProjectApi()
-                .getTestPlanApi()
-                .getTestSuitesPerTestCases();
+        getTestSuitsAndCases();
+    }
 
-        testCasesTree = createTestCasesTree(testSuitesPerTestCases);
-        if (testCasesTree != null) {
-            testCasesTree.setExpanded(true);
-            testPlanView = new TreeView<>(testCasesTree);
-            testPlanView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-            testSuitsTreePane.getChildren().add(testPlanView);
-            updateTestCaseExecutionStatus();
-            expandListBtn.setDisable(testCasesTree.getChildren().size() <= 0);
-        } else {
-            expandListBtn.setDisable(true);
-        }
-        // listener for enabling Report button
-        testPlanView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null && newValue != oldValue && newValue.isLeaf()) {
-                reportBtn.setDisable(false);
-            } else if (newValue != null && oldValue == newValue) {
-                reportBtn.setDisable(true);
+    private void getTestSuitsAndCases() {
+
+        assert toolManager != null;
+
+
+        Platform.runLater(() -> {
+            Map<TestSuite, List<TestCase>> testSuitesPerTestCases = toolManager
+                    .getTestProjectApi()
+                    .getTestPlanApi()
+                    .getTestSuitesPerTestCases();
+
+            testCasesTree = createTestCasesTree(testSuitesPerTestCases);
+            if (testCasesTree != null) {
+                testCasesTree.setExpanded(true);
+                testPlanView = new TreeView<>(testCasesTree);
+                testPlanView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+                testSuitsTreePane.getChildren().add(testPlanView);
+//            updateTestCaseExecutionStatus();
+                expandListBtn.setDisable(testCasesTree.getChildren().size() <= 0);
             } else {
-                reportBtn.setDisable(true);
+                expandListBtn.setDisable(true);
             }
+            // listener for enabling Report button
+            testPlanView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue != null && newValue != oldValue && newValue.isLeaf()) {
+                    reportBtn.setDisable(false);
+                } else if (newValue != null && oldValue == newValue) {
+                    reportBtn.setDisable(true);
+                } else {
+                    reportBtn.setDisable(true);
+                }
+            });
         });
     }
 
@@ -309,14 +336,9 @@ public class Controller implements Initializable {
         return setColorToImageView(execStatusBallImageView, color);
     }
 
-    private void updateTestCaseExecutionStatus() {
+    synchronized private void updateTestCaseExecutionStatus() {
         TestPlanApi testPlanApi = toolManager.getTestProjectApi().getTestPlanApi();
-        testPlanApi.getTestCasesAndSetExecutionStatusToTestCaseMap(true);
-//        executionStatusNums.setText("Passed: " + testPlanApi.getTestCasesActualPassedNum() +
-//                " Not run: " + testPlanApi.getTestCasesActualNotRunNum() +
-//                " Failed: " + testPlanApi.getTestCasesActualFailedNum() +
-//                " Blocked: " + testPlanApi.getTestCasesActualBlockedNum());
-
+//        testPlanApi.getTestCasesAndSetExecutionStatusToTestCaseMap(true);
         executionStatusNumsPass.setText("Passed: " + testPlanApi.getTestCasesActualPassedNum());
         executionStatusNumsNotRun.setText("Not run: " + testPlanApi.getTestCasesActualNotRunNum());
         executionStatusNumsFailed.setText("Failed: " + testPlanApi.getTestCasesActualFailedNum());
