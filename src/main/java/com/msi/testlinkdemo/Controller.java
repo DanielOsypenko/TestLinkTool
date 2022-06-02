@@ -9,10 +9,13 @@ import com.msi.testlinkBack.ToolManager;
 import com.msi.testlinkBack.api.TestPlanApi;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -32,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 
@@ -165,9 +169,49 @@ public class Controller implements Initializable {
                 if (selectedItem != null) {
                     toolManager.getTestProjectApi().chooseTestPlan(selectedItem);
                     logger.info("selected test plan = " + selectedItem);
+
+//                    getTestSuitsAndCasesTreeLater();
+
+                    GetPlanService getPlanService = new GetPlanService();
+                    getPlanService.setTestPlanApi(toolManager.getTestProjectApi().getTestPlanApi());
+                    getPlanService.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
+                        @Override
+                        public void handle(WorkerStateEvent workerStateEvent) {
+                            Object testSuiteListMap = workerStateEvent.getSource().getValue();
+
+                            // check that object from resp - (Map<TestSuite, List<TestCase>>
+                            // move to helpers
+                            boolean mapSuitable = false;
+                            if (testSuiteListMap instanceof Map){
+                                for (Map.Entry<?, ?> entry : ((Map<?, ?>) testSuiteListMap).entrySet()) {
+                                    Object k = entry.getKey();
+                                    Object v = entry.getValue();
+                                    if (k instanceof TestSuite) {
+                                        if (v instanceof List) {
+                                            if (new LinkedList((List) v).pollLast() instanceof TestCase) {
+                                                mapSuitable = true;
+                                                break;
+                                            } else {
+                                                mapSuitable = false;
+                                            }
+                                        } else {
+                                            mapSuitable = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (mapSuitable){
+                                buildTestSuitsAndCasesTree((Map<TestSuite, List<TestCase>>) workerStateEvent.getSource().getValue());
+                            } else {
+                                logger.error("resp from getPlanService on succession is not suitable.");
+                            }
+                        }
+                    });
+                    getPlanService.start();
+
                     setUpdateTestResults();
 
-                    getTestSuitsAndCases();
 
                     getTestSuitesBtn.setDisable(false);
                 } else {
@@ -234,41 +278,49 @@ public class Controller implements Initializable {
 
     @FXML
     protected void onGetTestSuitsAndCasesClick() {
-        getTestSuitsAndCases();
+//        getTestSuitsAndCasesTreeLater();
     }
 
-    private void getTestSuitsAndCases() {
 
-        assert toolManager != null;
+    // TODO  remove
+//    private void getTestSuitsAndCasesTreeLater() {
+//
+//        assert toolManager != null;
+//
+//        boolean res;
+//
+//        Platform.runLater(() -> {
+//
+//            buildTestSuitsAndCasesTree();
+//        });
+//    }
 
+    private void buildTestSuitsAndCasesTree(Map<TestSuite, List<TestCase>> testSuitesPerTestCases) {
+//        Map<TestSuite, List<TestCase>> testSuitesPerTestCases = toolManager
+//                .getTestProjectApi()
+//                .getTestPlanApi()
+//                .getTestSuitesPerTestCases();
 
-        Platform.runLater(() -> {
-            Map<TestSuite, List<TestCase>> testSuitesPerTestCases = toolManager
-                    .getTestProjectApi()
-                    .getTestPlanApi()
-                    .getTestSuitesPerTestCases();
-
-            testCasesTree = createTestCasesTree(testSuitesPerTestCases);
-            if (testCasesTree != null) {
-                testCasesTree.setExpanded(true);
-                testPlanView = new TreeView<>(testCasesTree);
-                testPlanView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-                testSuitsTreePane.getChildren().add(testPlanView);
+        testCasesTree = createTestCasesTree(testSuitesPerTestCases);
+        if (testCasesTree != null) {
+            testCasesTree.setExpanded(true);
+            testPlanView = new TreeView<>(testCasesTree);
+            testPlanView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+            testSuitsTreePane.getChildren().add(testPlanView);
 //            updateTestCaseExecutionStatus();
-                expandListBtn.setDisable(testCasesTree.getChildren().size() <= 0);
+            expandListBtn.setDisable(testCasesTree.getChildren().size() <= 0);
+        } else {
+            expandListBtn.setDisable(true);
+        }
+        // listener for enabling Report button
+        testPlanView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue != null && newValue != oldValue && newValue.isLeaf()) {
+                reportBtn.setDisable(false);
+            } else if (newValue != null && oldValue == newValue) {
+                reportBtn.setDisable(true);
             } else {
-                expandListBtn.setDisable(true);
+                reportBtn.setDisable(true);
             }
-            // listener for enabling Report button
-            testPlanView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-                if (newValue != null && newValue != oldValue && newValue.isLeaf()) {
-                    reportBtn.setDisable(false);
-                } else if (newValue != null && oldValue == newValue) {
-                    reportBtn.setDisable(true);
-                } else {
-                    reportBtn.setDisable(true);
-                }
-            });
         });
     }
 
@@ -390,5 +442,24 @@ public class Controller implements Initializable {
         }
     }
 
+    private static class GetPlanService extends Service<Map<TestSuite, List<TestCase>>> {
+
+        TestPlanApi testPlanApi;
+
+        public final void setTestPlanApi(TestPlanApi testPlanApi){
+            this.testPlanApi = testPlanApi;
+        }
+
+
+        @Override
+        protected Task<Map<TestSuite, List<TestCase>>> createTask() {
+            return new Task<Map<TestSuite, List<TestCase>>>() {
+                @Override
+                protected Map<TestSuite, List<TestCase>> call() {
+                    return testPlanApi.getTestSuitesPerTestCases();
+                }
+            };
+        }
+    }
 
 }
