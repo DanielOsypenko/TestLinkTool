@@ -7,17 +7,16 @@ import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
 import br.eti.kinoshita.testlinkjavaapi.model.TestSuite;
 import com.msi.testlinkBack.ToolManager;
 import com.msi.testlinkBack.api.TestPlanApi;
+import com.msi.testlinkdemo.services.GetPlanService;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.concurrent.Service;
-import javafx.concurrent.Task;
-import javafx.concurrent.WorkerStateEvent;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.effect.Light;
@@ -28,6 +27,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.controlsfx.control.textfield.CustomTextField;
 import org.slf4j.Logger;
@@ -35,9 +36,11 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+
+//TODO: limit the progress icon in time and add notification on failure
+//TODO: update list of the selected tests
 
 public class Controller implements Initializable {
     private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
@@ -59,8 +62,8 @@ public class Controller implements Initializable {
     @FXML
     private ComboBox<String> testPlanListBox;
 
-    @FXML
-    public Button getTestSuitesBtn;
+//    @FXML
+//    public Button getTestSuitesBtn;
 
     @FXML
     public Button getTestCasesSelectedBtn;
@@ -74,6 +77,8 @@ public class Controller implements Initializable {
     @FXML
     public Button reportBtn;
 
+    @FXML
+    public Button submitResult;
 //    @FXML
 //    public TextField executionStatusNums;
 
@@ -102,7 +107,7 @@ public class Controller implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         testPlanListBox.setDisable(true);
-        getTestSuitesBtn.setDisable(true);
+//        getTestSuitesBtn.setDisable(true);
         expandListBtn.setText(expandText);
         expandListBtn.setDisable(true);
 
@@ -170,42 +175,37 @@ public class Controller implements Initializable {
                     toolManager.getTestProjectApi().chooseTestPlan(selectedItem);
                     logger.info("selected test plan = " + selectedItem);
 
-//                    getTestSuitsAndCasesTreeLater();
 
                     GetPlanService getPlanService = new GetPlanService();
                     getPlanService.setTestPlanApi(toolManager.getTestProjectApi().getTestPlanApi());
-                    getPlanService.setOnSucceeded(new EventHandler<WorkerStateEvent>() {
-                        @Override
-                        public void handle(WorkerStateEvent workerStateEvent) {
-                            Object testSuiteListMap = workerStateEvent.getSource().getValue();
+                    getPlanService.setOnRunning(workerStateEvent -> {
+                        final ProgressIndicator pb = new ProgressIndicator();
+                        testSuitsTreePane.getChildren().add(pb);
+                    });
+                    getPlanService.setOnSucceeded(workerStateEvent -> {
+                        Object testSuiteListMap = workerStateEvent.getSource().getValue();
 
-                            // check that object from resp - (Map<TestSuite, List<TestCase>>
-                            // move to helpers
-                            boolean mapSuitable = false;
-                            if (testSuiteListMap instanceof Map){
-                                for (Map.Entry<?, ?> entry : ((Map<?, ?>) testSuiteListMap).entrySet()) {
-                                    Object k = entry.getKey();
-                                    Object v = entry.getValue();
-                                    if (k instanceof TestSuite) {
-                                        if (v instanceof List) {
-                                            if (new LinkedList((List) v).pollLast() instanceof TestCase) {
-                                                mapSuitable = true;
-                                                break;
-                                            } else {
-                                                mapSuitable = false;
-                                            }
-                                        } else {
-                                            mapSuitable = false;
-                                            break;
+                        // check that object from resp - (Map<TestSuite, List<TestCase>>
+                        // move to helpers
+                        boolean mapSuitable = false;
+                        if (testSuiteListMap instanceof Map){
+                            for (Map.Entry<?, ?> entry : ((Map<?, ?>) testSuiteListMap).entrySet()) {
+                                Object k = entry.getKey();
+                                Object v = entry.getValue();
+                                if (k instanceof TestSuite) {
+                                    if (v instanceof List) {
+                                        if (new LinkedList((List) v).pollLast() instanceof TestCase) {
+                                            mapSuitable = true;
                                         }
                                     }
+                                    break;
                                 }
                             }
-                            if (mapSuitable){
-                                buildTestSuitsAndCasesTree((Map<TestSuite, List<TestCase>>) workerStateEvent.getSource().getValue());
-                            } else {
-                                logger.error("resp from getPlanService on succession is not suitable.");
-                            }
+                        }
+                        if (mapSuitable){
+                            buildTestSuitsAndCasesTree((Map<TestSuite, List<TestCase>>) workerStateEvent.getSource().getValue());
+                        } else {
+                            logger.error("resp from getPlanService on succession is not suitable.");
                         }
                     });
                     getPlanService.start();
@@ -213,9 +213,10 @@ public class Controller implements Initializable {
                     setUpdateTestResults();
 
 
-                    getTestSuitesBtn.setDisable(false);
+//                    getTestSuitesBtn.setDisable(false);
                 } else {
-                    getTestSuitesBtn.setDisable(true);
+                    logger.error("select project before selection test plan");
+//                    getTestSuitesBtn.setDisable(true);
                 }
             });
         } else {
@@ -223,11 +224,14 @@ public class Controller implements Initializable {
         }
     }
 
-    /* Method to continuously update status of the execution
+    /* Method to continuously update status of the execution. Works only when TestPlan is selected
+        When TestPlan drop dwn is open, update would not performed
     * */
     void setUpdateTestResults(){
         Timeline overTenSecUpdate = new Timeline(new KeyFrame(Duration.seconds(5), (ActionEvent event) -> {
-            updateTestCaseExecutionStatus();
+            if (toolManager.getTestProjectApi().getTestPlanApi() != null){
+                updateTestCaseExecutionStatus();
+            }
         }));
         overTenSecUpdate.setCycleCount(Timeline.INDEFINITE);
         overTenSecUpdate.play();
@@ -235,20 +239,6 @@ public class Controller implements Initializable {
 
     @FXML
     public List<String> onGetTestCasesSelected() {
-//        testPlanView.getSelectionModel().selectedItemProperty().addListener((options, oldValue, newValue) -> {
-//            logger.info(">>>>>>>>>>>>>>>>>> 1");
-//
-//            if(newValue != null && newValue != oldValue){
-//                logger.info("Hello World");
-//            }
-
-//            if (!oldValue.equals(newValue)) {
-//                reportBtn.setDisable(false);
-//                logger.info(">>>>>>>>>>>>>>>>>> 2");
-//            } else {
-//                reportBtn.setDisable(true);
-//            }
-//        });
         List<String> chosenItems = testPlanView.getSelectionModel().getSelectedItems().stream()
                 .map(TreeItem::getValue).collect(Collectors.toList());
         logger.info("Chosen test cases:");
@@ -276,30 +266,7 @@ public class Controller implements Initializable {
 //        }
 //    }
 
-    @FXML
-    protected void onGetTestSuitsAndCasesClick() {
-//        getTestSuitsAndCasesTreeLater();
-    }
-
-
-    // TODO  remove
-//    private void getTestSuitsAndCasesTreeLater() {
-//
-//        assert toolManager != null;
-//
-//        boolean res;
-//
-//        Platform.runLater(() -> {
-//
-//            buildTestSuitsAndCasesTree();
-//        });
-//    }
-
     private void buildTestSuitsAndCasesTree(Map<TestSuite, List<TestCase>> testSuitesPerTestCases) {
-//        Map<TestSuite, List<TestCase>> testSuitesPerTestCases = toolManager
-//                .getTestProjectApi()
-//                .getTestPlanApi()
-//                .getTestSuitesPerTestCases();
 
         testCasesTree = createTestCasesTree(testSuitesPerTestCases);
         if (testCasesTree != null) {
@@ -307,7 +274,6 @@ public class Controller implements Initializable {
             testPlanView = new TreeView<>(testCasesTree);
             testPlanView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
             testSuitsTreePane.getChildren().add(testPlanView);
-//            updateTestCaseExecutionStatus();
             expandListBtn.setDisable(testCasesTree.getChildren().size() <= 0);
         } else {
             expandListBtn.setDisable(true);
@@ -327,8 +293,8 @@ public class Controller implements Initializable {
     private TreeItem<String> createTestCasesTree(Map<TestSuite, List<TestCase>> mapWithSummaries) {
         TestPlanApi testPlanApi = toolManager.getTestProjectApi().getTestPlanApi();
 
-        String testPlanName = testPlanApi.getTestPlanName();
-        if (testPlanName != null) {
+        if (testPlanApi != null && testPlanApi.getTestPlanName() != null) {
+            String testPlanName = testPlanApi.getTestPlanName();
             TreeItem<String> testCasesTree = new TreeItem<>(testPlanName);
 
             // mapWithSummaries has test cases with suits and summaries and has all test cases
@@ -442,24 +408,16 @@ public class Controller implements Initializable {
         }
     }
 
-    private static class GetPlanService extends Service<Map<TestSuite, List<TestCase>>> {
+    @FXML
+    void openReportDialog(){
 
-        TestPlanApi testPlanApi;
+        List<String> selectedTests = testPlanView.getSelectionModel().getSelectedItems().stream()
+                .map(TreeItem::getValue).collect(Collectors.toList());
 
-        public final void setTestPlanApi(TestPlanApi testPlanApi){
-            this.testPlanApi = testPlanApi;
-        }
-
-
-        @Override
-        protected Task<Map<TestSuite, List<TestCase>>> createTask() {
-            return new Task<Map<TestSuite, List<TestCase>>>() {
-                @Override
-                protected Map<TestSuite, List<TestCase>> call() {
-                    return testPlanApi.getTestSuitesPerTestCases();
-                }
-            };
-        }
+        submitResult.setOnAction(actionEvent -> {
+            final ReportStageDialog reportStageDialog = new ReportStageDialog(selectedTests);
+            reportStageDialog.setParentWindow(main.getScene().getWindow());
+            reportStageDialog.setDialogWindow(640,480);
+        });
     }
-
 }

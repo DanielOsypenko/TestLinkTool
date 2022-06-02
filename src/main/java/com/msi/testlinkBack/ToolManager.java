@@ -59,27 +59,6 @@ public class ToolManager {
         return testProjectApi;
     }
 
-
-
-
-
-//    public Map<TestSuite, List<TestCase>> getTestSuitesPerTestCases(){
-//        TestSuite[] testSuits = this.getTestProjectApi().getTestPlanApi().getTestSuits();
-//        return Arrays.asList(testSuits).parallelStream()
-//                .map(this::getTestSuiteEntry).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-//    }
-//
-//    public Map<TestSuiteCustom, TestCaseCustom[]> getTestSuitesPerTestCasesCustom(){
-//        return getTestSuitesPerTestCases().entrySet().stream().collect(Collectors.toMap(e-> new TestSuiteCustom(e.getKey())
-//                , e -> e.getValue().stream().map(TestCaseCustom::new).toArray(TestCaseCustom[]::new)));
-//    }
-//
-//    public Map<String, String[]> getTestSuitesPerTestCasesCustomStr(){
-//        return getTestSuitesPerTestCases().entrySet().stream().collect(Collectors.toMap(e-> new TestSuiteCustom(e.getKey()).toString()
-//                , e -> e.getValue().stream().map(TestCase::toString).toArray(String[]::new)));
-//    }
-
-
     public static void main(String[] args) {
 
         TestProjectApi testProjectApi = ToolManager.getManager().chooseProject("G3INCAR");

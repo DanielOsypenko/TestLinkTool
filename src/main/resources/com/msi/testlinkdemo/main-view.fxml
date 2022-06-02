@@ -36,12 +36,9 @@
     </HBox>
 
 
-
-
     <HBox fx:id="suiteButtons" alignment="TOP_LEFT">
-        <Button text="GetTestSuites" fx:id="getTestSuitesBtn" onAction="#onGetTestSuitsAndCasesClick"/>
-        <Button text="GetSelected-TMP" fx:id="getTestCasesSelectedBtn" onAction="#onGetTestCasesSelected"/>
         <Button fx:id="expandListBtn" onAction="#onExpandList"/>
+        <Button text="Submit" fx:id="submitResult" onAction="#openReportDialog"/>
         <Button text="Report" fx:id="reportBtn" onAction="#onReportResults"/>
 
     </HBox>
@@ -50,9 +47,5 @@
             <StackPane fx:id="testSuitsTreePane"/>
         </ListView>
     </VBox>
-<!--    <Button text="GetTestCases" onAction="#onGetTestCasesClick"/>-->
-<!--    <VBox fx:id="testCaseNamesPaneVbox">-->
-<!--        <ListView fx:id="tcsNames"/>-->
-<!--    </VBox>-->
 
 </VBox>

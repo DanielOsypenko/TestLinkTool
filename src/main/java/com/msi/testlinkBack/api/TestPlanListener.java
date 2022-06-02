@@ -6,7 +6,9 @@ import br.eti.kinoshita.testlinkjavaapi.model.Build;
 import br.eti.kinoshita.testlinkjavaapi.model.ReportTCResultResponse;
 import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
 import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
+import br.eti.kinoshita.testlinkjavaapi.util.TestLinkAPIException;
 import com.msi.testlinkBack.ToolManager;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,18 +126,22 @@ public class TestPlanListener implements Runnable{
     public List<TestCase> getTestCasesForTestPlan(boolean update) {
         if (ToolManager.getManager().getTestProjectApi().getProjectName() != null && this.testPlanName != null) {
             if (update) {
-                this.testCasesActual = Arrays.asList(api.getTestCasesForTestPlan(
-                        this.testPlanId
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null
-                        , null));
+                try {
+                    this.testCasesActual = Arrays.asList(api.getTestCasesForTestPlan(
+                            this.testPlanId
+                            , null
+                            , null
+                            , null
+                            , null
+                            , null
+                            , null
+                            , null
+                            , null
+                            , null
+                            , null));
+                } catch (TestLinkAPIException e) {
+                    logger.error(ExceptionUtils.getStackTrace(e));
+                }
                 this.testCasesActualNum = testCasesActual.size();
             }
         } else {
