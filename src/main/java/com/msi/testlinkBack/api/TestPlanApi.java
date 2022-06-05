@@ -3,12 +3,13 @@ package com.msi.testlinkBack.api;
 import br.eti.kinoshita.testlinkjavaapi.TestLinkAPI;
 import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
 import br.eti.kinoshita.testlinkjavaapi.model.*;
+import br.eti.kinoshita.testlinkjavaapi.util.TestLinkAPIException;
 import com.msi.testlinkBack.TestCaseCustom;
 import com.msi.testlinkBack.TestSuiteCustom;
 import com.msi.testlinkBack.ToolManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -126,7 +127,7 @@ public class TestPlanApi extends TestPlanListener {
 //    }
 
 
-    public List<TestCase> getTestCasesByExecStatus(ExecutionStatus executionStatus) {
+    public List<TestCase> getTestCasesByExecStatus(ExecutionStatus executionStatus) throws TestLinkAPIException {
         if (testCasesActual == null || testCasesActual.size() > 0) {
             getTestCasesForTestPlan(true);
         } else {
@@ -209,13 +210,13 @@ public class TestPlanApi extends TestPlanListener {
 
     }
 
-    public Map<String, TestCase> getSummaries() {
+    public LinkedHashMap<String, TestCase> getSummaries() {
         Map<Integer, String> ids = testCasesActual.stream()
                 .collect(Collectors.toMap(TestCase::getId, TestCase::getFullExternalId));
 
-        return ids.entrySet().parallelStream()
+        return new LinkedHashMap<>(ids.entrySet().parallelStream()
                 .map(entry -> this.tryGetTestCaseSumByExternalId(entry.getKey(), entry.getValue()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
     public List<TestCase> getTestCasesPerTestSuite(TestSuite testSuite){
@@ -228,35 +229,31 @@ public class TestPlanApi extends TestPlanListener {
     }
 
     // Get the map with summaries
-    public Map<TestSuite, List<TestCase>> getTestSuitesPerTestCases(){
+    public LinkedHashMap<TestSuite, List<TestCase>> getTestSuitesPerTestCases(){
         TestSuite[] testSuits = testProjectApi.getTestPlanApi().getTestSuits();
-        return Arrays.asList(testSuits).parallelStream()
-                .map(this::getTestSuiteEntry).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return new LinkedHashMap<>(Arrays.asList(testSuits).parallelStream()
+                .map(this::getTestSuiteEntry).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 
-    public Map<TestSuiteCustom, TestCaseCustom[]> getTestSuitesPerTestCasesCustom(){
-        return getTestSuitesPerTestCases().entrySet().stream().collect(Collectors.toMap(e-> new TestSuiteCustom(e.getKey())
-                , e -> e.getValue().stream().map(TestCaseCustom::new).toArray(TestCaseCustom[]::new)));
+    public LinkedHashMap<TestSuiteCustom, TestCaseCustom[]> getTestSuitesPerTestCasesCustom(){
+        return new LinkedHashMap<>(getTestSuitesPerTestCases().entrySet().stream().collect(Collectors.toMap(e-> new TestSuiteCustom(e.getKey())
+                , e -> e.getValue().stream().map(TestCaseCustom::new).toArray(TestCaseCustom[]::new))));
     }
 
-    public Map<String, String[]> getTestSuitesPerTestCasesCustomStr(){
-        return getTestSuitesPerTestCases().entrySet().stream().collect(Collectors.toMap(e-> new TestSuiteCustom(e.getKey()).toString()
-                , e -> e.getValue().stream().map(TestCase::toString).toArray(String[]::new)));
+    public LinkedHashMap<String, String[]> getTestSuitesPerTestCasesCustomStr(){
+        return new LinkedHashMap<>(getTestSuitesPerTestCases().entrySet().stream().collect(Collectors.toMap(e-> new TestSuiteCustom(e.getKey()).toString()
+                , e -> e.getValue().stream().map(TestCase::toString).toArray(String[]::new))));
     }
 
-    public List<String> getSummariesAndStatus()  {
-
+    public List<String> getSummariesAndStatus()  throws TestLinkAPIException{
         Instant startTimer = Instant.now();
-
-        logger.info("before getTestCasesFailed " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()));
+        logger.info("before getSummariesAndStatus " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()));
         getTestCasesForTestPlan(true);
-//        List<String> ids = Arrays.stream(g3INCAR_api.testCasesActual).map(TestCase::getFullExternalId).collect(Collectors.toList());
-        Map<Integer, String> ids = testCasesActual.stream().collect(Collectors.toMap(TestCase::getId, TestCase::getFullExternalId));
-        logger.info("after getTestCasesFailed " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()));
-        Map<String, TestCase> summaries = getSummaries();
+        LinkedHashMap<Integer, String> ids = new LinkedHashMap<>(testCasesActual.stream().collect(Collectors.toMap(TestCase::getId, TestCase::getFullExternalId)));
+        LinkedHashMap<String, TestCase> summaries = getSummaries();
         summaries.forEach((key, value) -> logger.info(key + ":" + value.toString()));
-//        logger.info("after getSummaries " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()) +
-//                " took " + Duration.between(Instant.now(), startTimer).getSeconds() + "sec");
+        logger.info("after getSummaries " + new SimpleDateFormat("yyyyMMdd_HH:mm:ss").format(Calendar.getInstance().getTime()) +
+                " took " + Duration.between(Instant.now(), startTimer).getSeconds() + "sec");
         return summaries.values().stream().map(TestCase::toString).collect(Collectors.toList());
     }
 
@@ -265,12 +262,17 @@ public class TestPlanApi extends TestPlanListener {
      Method is a helper to create map with only relevant test cases from the test plan, but with summaries.
      @return the ma
      */
-    public Map<TestSuite, List<TestCase>> filterMapWithSummaries(Map<TestSuite, List<TestCase>> mapWithSummaries) {
-        List<Integer> idsFromTestPlanTestCases = getTestCasesForTestPlan(false)
-                .stream().map(TestCase::getId).collect(Collectors.toList());
-        mapWithSummaries.entrySet().forEach(entry ->
-                entry.setValue(entry.getValue().stream().filter(tc -> idsFromTestPlanTestCases.contains(tc.getId())).collect(Collectors.toList()))
-        );
+    public LinkedHashMap<TestSuite, List<TestCase>> filterMapWithSummaries(LinkedHashMap<TestSuite, List<TestCase>> mapWithSummaries) {
+        List <TestCase> testCases = getTestCasesForTestPlan(false);
+        if (testCases != null) {
+            List<Integer> idsFromTestPlanTestCases = getTestCasesForTestPlan(false)
+                    .stream().map(TestCase::getId).collect(Collectors.toList());
+            mapWithSummaries.entrySet().forEach(entry ->
+                    entry.setValue(entry.getValue().stream().filter(tc -> idsFromTestPlanTestCases.contains(tc.getId())).collect(Collectors.toList()))
+            );
+        } else {
+            logger.error("Got exception on getTestCasesForTestPlan(). Assuming no permissions for test plan");
+        }
         return mapWithSummaries;
     }
 
@@ -311,7 +313,7 @@ public class TestPlanApi extends TestPlanListener {
             boolean tasksLeft = executionService.awaitTermination(20, TimeUnit.SECONDS);
             logger.info("all reports sent: " + tasksLeft);
         } catch (InterruptedException e) {
-            logger.error("execute report results interrupted: " + Arrays.toString(e.getStackTrace()));
+            logger.error("execute report results interrupted: " + ExceptionUtils.getStackTrace(e));
         }
         return reportTCResultResponse;
     }

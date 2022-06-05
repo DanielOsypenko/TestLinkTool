@@ -2,11 +2,22 @@
     -fx-background-color: AliceBlue;
     -fx-font-size: 10pt;
 }
+#testPlanProjectListHBox{
+    -fx-padding: 10;
+    -fx-border-radius: 2;
+    -fx-border-style: solid;
+    -fx-border-color: #D3D3D3;
+}
+
+#testProjectListHBox{
+
+}
 #testProjectListBox {
     -fx-min-width: 200;
     -fx-max-width: 200;
 }
-#testPlanListHBox {
+
+#testPlanListBox {
     -fx-min-width: 200;
     -fx-max-width: 200;
 }
@@ -22,3 +33,12 @@
 #testPlanProjectListHBox{
     -fx-spacing: 4;
 }
+/*#testSuitsListView{*/
+/*    -fx-min-width: 0;*/
+/*    -fx-pref-width: 0;*/
+/*    -fx-max-width: 0;*/
+
+/*    -fx-min-height: 0;*/
+/*    -fx-pref-height: 0;*/
+/*    -fx-max-height: 0;*/
+/*}*/

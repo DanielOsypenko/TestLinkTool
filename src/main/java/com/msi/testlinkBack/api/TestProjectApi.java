@@ -50,6 +50,7 @@ public class TestProjectApi {
         this.testPlanApi = new TestPlanApi();
         this.testPlanApi.setTestPlan(planName);
         Thread testPlanApiListenerThread = new Thread(this.testPlanApi);
+        testPlanApiListenerThread.setDaemon(true);
         testPlanApiListenerThread.start();
         return testPlanApi;
     }

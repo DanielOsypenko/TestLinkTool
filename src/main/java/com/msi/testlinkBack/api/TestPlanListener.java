@@ -3,7 +3,6 @@ package com.msi.testlinkBack.api;
 import br.eti.kinoshita.testlinkjavaapi.TestLinkAPI;
 import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
 import br.eti.kinoshita.testlinkjavaapi.model.Build;
-import br.eti.kinoshita.testlinkjavaapi.model.ReportTCResultResponse;
 import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
 import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
 import br.eti.kinoshita.testlinkjavaapi.util.TestLinkAPIException;
@@ -11,12 +10,7 @@ import com.msi.testlinkBack.ToolManager;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -27,7 +21,7 @@ public class TestPlanListener implements Runnable{
     protected TestPlan testPlan;
     protected Integer testPlanId;
     protected String testPlanName;
-    protected Map<ExecutionStatus, List<TestCase>> testCasesToStatusMap;
+    protected LinkedHashMap<ExecutionStatus, List<TestCase>> testCasesToStatusMap;
     protected List<TestCase> testCasesActual = null;
     protected List<TestCase> testCasesActualNotRun = null;
     protected List<TestCase> testCasesActualPassed = null;
@@ -40,9 +34,9 @@ public class TestPlanListener implements Runnable{
     protected int testCasesActualFailedNum;
     protected Build[] builds;
     protected Integer buildIdLast;
-//    ConcurrentLinkedQueue<ReportTCResultResponse> reportTCResultResponse = new ConcurrentLinkedQueue<>();
 
     static final Logger logger = LoggerFactory.getLogger(TestPlanListener.class.getSimpleName());
+    final Object lock = ToolManager.getManager().getLock();
 
     public TestPlanListener() {
         ToolManager manager = ToolManager.getManager();
@@ -64,17 +58,19 @@ public class TestPlanListener implements Runnable{
 
     @Override
     public void run() {
-
         logger.info("start updating test plan: " + getTestPlanName());
         while (testProjectApi != null){
-
-            getTestCasesAndSetExecutionStatusToTestCaseMap(true);
-//            try {
-//                // TODO - remove getTestSuits, make it automatically after choosing test plan, add progress spinner
-//                getTestCasesAndSetExecutionStatusToTestCaseMap(true);
-//            } catch (NullPointerException e) {
-//                logger.info(e.getMessage());
-//            }
+            // method is synchronized
+            try {
+                getTestCasesAndSetExecutionStatusToTestCaseMap(true);
+            } catch (TestLinkAPIException e) {
+                logger.error("Got exception on requesting test suite:\n"+ ExceptionUtils.getStackTrace(e));
+                // raise popup
+                synchronized (lock){
+                    lock.notifyAll();
+                    logger.error(">>>>>>>>>>>>>>>>> 1 " + lock);
+                }
+            }
             sleep(5);
         }
     }
@@ -88,13 +84,16 @@ public class TestPlanListener implements Runnable{
     }
 
     public TestPlanListener setTestPlan(String planName) {
-        this.testPlan = api.getTestPlanByName(planName, testProjectApi.getProjectName());
-        this.testPlanId = testPlan.getId();
-        this.testPlanName = testPlan.getName();
-        Executors.newCachedThreadPool().execute(() -> this.setBuilds(api.getBuildsForTestPlan(this.testPlanId)));
-
-//        Thread testPlanListenerThread = new Thread(this);
-//        testPlanListenerThread.start();
+        if (planName != null) {
+            this.testPlan = api.getTestPlanByName(planName, testProjectApi.getProjectName());
+            this.testPlanId = testPlan.getId();
+            this.testPlanName = testPlan.getName();
+            Executors.newCachedThreadPool().execute(() -> this.setBuilds(api.getBuildsForTestPlan(this.testPlanId)));
+        } else {
+            this.testPlan = null;
+            this.testPlanId = null;
+            this.testPlanName = null;
+        }
         return this;
     }
 
@@ -108,13 +107,17 @@ public class TestPlanListener implements Runnable{
         }
     }
 
-    synchronized public Map<ExecutionStatus, List<TestCase>> getTestCasesAndSetExecutionStatusToTestCaseMap(boolean update) {
-        getTestCasesForTestPlan(update);
-        return getExecutionStatusToTestCasesMap();
+    synchronized public Map<ExecutionStatus, List<TestCase>> getTestCasesAndSetExecutionStatusToTestCaseMap(boolean update) throws TestLinkAPIException{
+        Map<ExecutionStatus, List<TestCase>> res = null;
+        if (testPlan != null && testPlanId != null && testPlanName != null) {
+            getTestCasesForTestPlan(update);
+            res = getExecutionStatusToTestCasesMap();
+        }
+        return res;
     }
 
-    private Map<ExecutionStatus, List<TestCase>> getExecutionStatusToTestCasesMap() {
-        this.testCasesToStatusMap = testCasesActual.stream().collect(Collectors.groupingBy(TestCase::getExecutionStatus));
+    private LinkedHashMap<ExecutionStatus, List<TestCase>> getExecutionStatusToTestCasesMap() {
+        this.testCasesToStatusMap = new LinkedHashMap<>(testCasesActual.stream().collect(Collectors.groupingBy(TestCase::getExecutionStatus)));
         Arrays.stream(ExecutionStatus.values()).forEach(es->this.testCasesToStatusMap.putIfAbsent(es, new ArrayList<>()));
         getTestCasesNotRun();
         getTestCasesPassed();
@@ -123,25 +126,23 @@ public class TestPlanListener implements Runnable{
         return this.testCasesToStatusMap;
     }
 
-    public List<TestCase> getTestCasesForTestPlan(boolean update) {
+    public List<TestCase> getTestCasesForTestPlan(boolean update) throws TestLinkAPIException {
         if (ToolManager.getManager().getTestProjectApi().getProjectName() != null && this.testPlanName != null) {
             if (update) {
-                try {
-                    this.testCasesActual = Arrays.asList(api.getTestCasesForTestPlan(
-                            this.testPlanId
-                            , null
-                            , null
-                            , null
-                            , null
-                            , null
-                            , null
-                            , null
-                            , null
-                            , null
-                            , null));
-                } catch (TestLinkAPIException e) {
-                    logger.error(ExceptionUtils.getStackTrace(e));
-                }
+                TestCase[] testCases = api.getTestCasesForTestPlan(
+                        this.testPlanId
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null
+                        , null);
+                this.testCasesActual = Arrays.asList(testCases);
+
                 this.testCasesActualNum = testCasesActual.size();
             }
         } else {
@@ -178,11 +179,13 @@ public class TestPlanListener implements Runnable{
     }
 
     public List<TestCase> getTestCasesFailed() {
-        if (this.testCasesToStatusMap.isEmpty()) {
+        if (this.testCasesToStatusMap != null && this.testCasesToStatusMap.isEmpty()) {
             getTestCasesAndSetExecutionStatusToTestCaseMap(false);
         }
-        testCasesActualFailed = testCasesToStatusMap.get(ExecutionStatus.FAILED);
-        testCasesActualFailedNum = testCasesActualFailed.size();
+        if (this.testCasesToStatusMap != null) {
+            testCasesActualFailed = testCasesToStatusMap.get(ExecutionStatus.FAILED);
+            testCasesActualFailedNum = testCasesActualFailed.size();
+        }
         return testCasesActualFailed;
     }
 }

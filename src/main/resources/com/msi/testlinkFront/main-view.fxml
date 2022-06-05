@@ -7,8 +7,8 @@
 
 
 <?import org.controlsfx.control.textfield.CustomTextField?>
-<VBox alignment="CENTER" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.msi.testlinkdemo.Controller" fx:id="main">
+<VBox alignment="TOP_LEFT" spacing="20.0" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.msi.testlinkFront.Controller" fx:id="main">
     <padding>
         <Insets bottom="20.0" left="20.0" right="20.0" top="20.0"/>
     </padding>
@@ -16,14 +16,14 @@
 
     <HBox fx:id="testPlanProjectListHBox" alignment="TOP_LEFT">
         <HBox fx:id="testProjectListHBox">
-            <ComboBox fx:id="testProjectListBox" onShowing="#onAppearanceSetProject" minWidth="200">
+            <ComboBox fx:id="testProjectListBox" onShowing="#onAppearanceSetProject">
                 <value>
                     <String fx:value="Test Project"/>
                 </value>
             </ComboBox>
         </HBox>
         <HBox fx:id="testPlanListHBox">
-            <ComboBox fx:id="testPlanListBox" onShowing="#onAppearanceSetTestPlan" minWidth="200">
+            <ComboBox fx:id="testPlanListBox" onShowing="#onAppearanceSetTestPlan">
                 <value>
                     <String fx:value="Test Plan"/>
                 </value>
@@ -36,16 +36,16 @@
     </HBox>
 
 
-    <HBox fx:id="suiteButtons" alignment="TOP_LEFT">
-        <Button fx:id="expandListBtn" onAction="#onExpandList"/>
-        <Button text="Submit" fx:id="submitResult" onAction="#openReportDialog"/>
-        <Button text="Report" fx:id="reportBtn" onAction="#onReportResults"/>
-
-    </HBox>
     <VBox fx:id="testSuitsPaneVbox">
         <ListView fx:id="testSuitsListView">
             <StackPane fx:id="testSuitsTreePane"/>
         </ListView>
     </VBox>
+    <HBox fx:id="suiteButtons" alignment="TOP_LEFT">
+        <Button fx:id="expandListBtn" onAction="#onExpandList"/>
+        <!-- action func for submit is not defined on xml. Setting popup window should be called on initialize in controller -->
+        <Button fx:id="submitBtn" text="Submit" />
+        <Button fx:id="reportBtn" text="Report" onAction="#onReportResults"/>
 
+    </HBox>
 </VBox>

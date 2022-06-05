@@ -1,4 +1,4 @@
-package com.msi.testlinkdemo;
+package com.msi.testlinkFront;
 
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;

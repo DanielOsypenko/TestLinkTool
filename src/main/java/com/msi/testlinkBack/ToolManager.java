@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ToolManager {
 
@@ -24,6 +25,8 @@ public class ToolManager {
     TestProjectApi testProjectApi;
     String projectName;
 
+    ReentrantLock lock = new ReentrantLock();
+
     public static ToolManager toolManager;
 
     public ToolManager(){
@@ -32,6 +35,10 @@ public class ToolManager {
         } catch (MalformedURLException e) {
             logger.error(Arrays.toString(e.getStackTrace()));
         }
+    }
+
+    public ReentrantLock getLock() {
+        return lock;
     }
 
     public static ToolManager getManager(){

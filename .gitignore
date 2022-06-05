@@ -1,4 +1,7 @@
-/resources/*
+src/main/resources/*
 /target/*
 /.idea/*
-*iml
+*.json
+TestLinkDemo.iml
+/out
+*.log

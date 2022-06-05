@@ -1,6 +1,5 @@
-package com.msi.testlinkdemo;
+package com.msi.testlinkFront;
 
-import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
 import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
 import com.msi.testlinkBack.ToolManager;
 import javafx.collections.FXCollections;
@@ -9,9 +8,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -42,8 +39,18 @@ public class ReportStageDialog extends Stage {
 
     private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
 
-    public ReportStageDialog(List<String> selectedTests) {
+    public ReportStageDialog() {
+    }
+
+    public void setSelectedTests(List<String> selectedTests) {
         this.selectedTests = selectedTests;
+
+        ObservableList<String> testsSelectedObservableList = FXCollections.observableArrayList();
+
+        testsSelectedObservableList.addAll(selectedTests);
+        listView.setItems(testsSelectedObservableList);
+
+        logger.info("selected test cases:");
         for (String chosenItem : selectedTests) {
             logger.info(chosenItem);
         }
@@ -53,10 +60,7 @@ public class ReportStageDialog extends Stage {
         initModality(Modality.APPLICATION_MODAL);
         initOwner(parentStage);
 
-        ObservableList<String> testsSelectedObservableList = FXCollections.observableArrayList();
 
-        testsSelectedObservableList.addAll(selectedTests);
-        listView.setItems(testsSelectedObservableList);
         listViewBox.getChildren().add(listView);
 
         statusBtnBox.getChildren().addAll(passStatusBtn, failStatusBtn, blockStatusBtn);
@@ -67,11 +71,11 @@ public class ReportStageDialog extends Stage {
 
         mainBox.getChildren().addAll(listViewBox, statusBtnBox, submitBtnBox);
         setTitle("Submit results");
-//        dialogBox.getChildren().add(new TextField("Submit results"));
+
         Scene reportDialogScene = new Scene(mainBox, sceneSizeV, sceneSizeV1);
 
         setScene(reportDialogScene);
-        show();
+//        show();
     }
 
     public void setParentWindow(Window parentStage) {
