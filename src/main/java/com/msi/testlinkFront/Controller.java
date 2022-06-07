@@ -5,6 +5,7 @@ import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
 import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
 import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
 import br.eti.kinoshita.testlinkjavaapi.model.TestSuite;
+import com.msi.ConfigManager;
 import com.msi.ExceptionListenerCustom;
 import com.msi.testlinkBack.ToolManager;
 import com.msi.testlinkBack.api.TestPlanApi;
@@ -26,7 +27,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.stage.Popup;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
@@ -69,6 +69,8 @@ public class Controller implements Initializable {
 
     @FXML
     private ComboBox<String> testPlanListBox;
+
+    private ProgressIndicator pb;
 
     @FXML
     private ListView testSuitsListView;
@@ -149,10 +151,12 @@ public class Controller implements Initializable {
         });
     }
 
+
+
     @FXML
     protected void onAppearanceSetProject() {
 
-        testProjectListBox.setVisibleRowCount(5);
+        testProjectListBox.setVisibleRowCount(10);
         TestProject[] testProjects = toolManager.getAllProjects();
         ObservableList<String> testProjectList = FXCollections.observableArrayList();
 
@@ -162,6 +166,7 @@ public class Controller implements Initializable {
         });
         testProjectListBox.setItems(testProjectList);
         testProjectListBox.setOnAction((event) -> {
+            testPlanListBox.setVisibleRowCount(10);
             testPlanListBox.setDisable(true);
             refreshStatusNumBar();
             String selectedItem = testProjectListBox.getSelectionModel().getSelectedItem();
@@ -204,7 +209,7 @@ public class Controller implements Initializable {
                     getPlanService.setTestPlanApi(toolManager.getTestProjectApi().getTestPlanApi());
                     getPlanService.setSecAbort(30);
                     getPlanService.setOnRunning(workerStateEvent -> {
-                        final ProgressIndicator pb = new ProgressIndicator();
+                        pb = new ProgressIndicator();
                         testSuitsTreePane.getChildren().add(pb);
                     });
                     getPlanService.setOnSucceeded(workerStateEvent -> {

@@ -1,6 +1,7 @@
 package com.msi.testlinkFront;
 
 import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
+import com.msi.ConfigManager;
 import com.msi.testlinkBack.ToolManager;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -8,7 +9,9 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -16,6 +19,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ReportStageDialog extends Stage {
@@ -26,14 +31,16 @@ public class ReportStageDialog extends Stage {
     HBox mainBox = new HBox();
 
     HBox listViewBox = new HBox();
+
     ListView<String> listView = new ListView<>();
 
-    HBox statusBtnBox = new HBox();
+    VBox customFieldsBox = new VBox();
+
+    HBox statusAndSubmitBtnBox = new HBox();
     Button passStatusBtn = new Button("Pass");
     Button failStatusBtn = new Button("Fail");
     Button blockStatusBtn = new Button("Block");
 
-    HBox submitBtnBox = new HBox();
     Button submitBtn = new Button("Submit");
 
 
@@ -60,22 +67,60 @@ public class ReportStageDialog extends Stage {
         initModality(Modality.APPLICATION_MODAL);
         initOwner(parentStage);
 
-
         listViewBox.getChildren().add(listView);
 
-        statusBtnBox.getChildren().addAll(passStatusBtn, failStatusBtn, blockStatusBtn);
-        statusBtnBox.setAlignment(Pos.BOTTOM_LEFT);
+        statusAndSubmitBtnBox.getChildren().addAll(passStatusBtn, failStatusBtn, blockStatusBtn);
+        submitBtn.setAlignment(Pos.BOTTOM_RIGHT);
+        statusAndSubmitBtnBox.getChildren().add(submitBtn);
+        statusAndSubmitBtnBox.setAlignment(Pos.TOP_RIGHT);
 
-        submitBtnBox.getChildren().add(submitBtn);
-        submitBtnBox.setAlignment(Pos.BASELINE_RIGHT);
+        VBox customFieldsBox = getCustomFields();
+        customFieldsBox.getChildren().addAll(statusAndSubmitBtnBox);
+        setStyles();
 
-        mainBox.getChildren().addAll(listViewBox, statusBtnBox, submitBtnBox);
+        mainBox.getChildren().addAll(listViewBox,  customFieldsBox);
         setTitle("Submit results");
 
         Scene reportDialogScene = new Scene(mainBox, sceneSizeV, sceneSizeV1);
 
         setScene(reportDialogScene);
-//        show();
+
+    }
+
+    void setStyles(){
+        double mainBoxWidth = 640;
+        double mainBoxHigh = 480;
+        mainBox.getStylesheets().add(
+                Objects.requireNonNull(mainBox.getClass().getResource("/styles.css")).toExternalForm());
+        mainBox.getStyleClass().add("submitDialog");
+        mainBox.setMinSize(mainBoxWidth, mainBoxHigh);
+        listViewBox.getStyleClass().add("selectedTestList");
+        listViewBox.setMinHeight(mainBox.getHeight());
+        listViewBox.setMinWidth(mainBoxWidth/2);
+
+        listView.setMinWidth(mainBoxWidth/2);
+
+        customFieldsBox.setMinHeight(mainBox.getHeight());
+
+        statusAndSubmitBtnBox.getStyleClass().add("statusBtnBox");
+        submitBtn.getStyleClass().add("submitBtnFromDialog");
+    }
+
+
+    private VBox getCustomFields() {
+        // read configuration
+        ConfigManager configManager = new ConfigManager();
+        configManager.processConfig();
+        Map<String, String> customFields = ConfigManager.Config.customFields;
+
+        // add all custom fields from json. the number and titles of fields are secured in code
+
+        customFields.forEach((k,v)-> {
+            HBox oneFieldHBOX = new HBox();
+            oneFieldHBOX.getChildren().addAll(new TextField(k), new TextField(v));
+            customFieldsBox.getChildren().add(oneFieldHBOX);
+        });
+        return customFieldsBox;
     }
 
     public void setParentWindow(Window parentStage) {

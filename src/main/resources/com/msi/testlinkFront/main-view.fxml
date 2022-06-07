@@ -14,25 +14,29 @@
     </padding>
 
 
-    <HBox fx:id="testPlanProjectListHBox" alignment="TOP_LEFT">
-        <HBox fx:id="testProjectListHBox">
-            <ComboBox fx:id="testProjectListBox" onShowing="#onAppearanceSetProject">
-                <value>
-                    <String fx:value="Test Project"/>
-                </value>
-            </ComboBox>
-        </HBox>
-        <HBox fx:id="testPlanListHBox">
-            <ComboBox fx:id="testPlanListBox" onShowing="#onAppearanceSetTestPlan">
-                <value>
-                    <String fx:value="Test Plan"/>
-                </value>
-            </ComboBox>
-        </HBox>
-        <CustomTextField fx:id="executionStatusNumsPass"/>
-        <CustomTextField fx:id="executionStatusNumsNotRun"/>
-        <CustomTextField fx:id="executionStatusNumsFailed"/>
-        <CustomTextField fx:id="executionStatusNumsBlocked"/>
+    <HBox fx:id="testPlanProjectListHBox">
+
+            <HBox fx:id="testProjectListHBox">
+                <ComboBox fx:id="testProjectListBox" onShowing="#onAppearanceSetProject">
+                    <value>
+                        <String fx:value="Test Project"/>
+                    </value>
+                </ComboBox>
+            </HBox>
+            <HBox fx:id="testPlanListHBox">
+                <ComboBox fx:id="testPlanListBox" onShowing="#onAppearanceSetTestPlan">
+                    <value>
+                        <String fx:value="Test Plan"/>
+                    </value>
+                </ComboBox>
+            </HBox>
+
+
+            <CustomTextField fx:id="executionStatusNumsPass"/>
+            <CustomTextField fx:id="executionStatusNumsNotRun"/>
+            <CustomTextField fx:id="executionStatusNumsFailed"/>
+            <CustomTextField fx:id="executionStatusNumsBlocked"/>
+
     </HBox>
 
 
@@ -44,7 +48,7 @@
     <HBox fx:id="suiteButtons" alignment="TOP_LEFT">
         <Button fx:id="expandListBtn" onAction="#onExpandList"/>
         <!-- action func for submit is not defined on xml. Setting popup window should be called on initialize in controller -->
-        <Button fx:id="submitBtn" text="Submit" />
+        <Button fx:id="submitBtn" text="Submit"/>
         <Button fx:id="reportBtn" text="Report" onAction="#onReportResults"/>
 
     </HBox>

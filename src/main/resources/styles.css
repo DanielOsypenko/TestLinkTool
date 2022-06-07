@@ -42,3 +42,13 @@
 /*    -fx-pref-height: 0;*/
 /*    -fx-max-height: 0;*/
 /*}*/
+
+.submitDialog{
+    -fx-min-width: 640;
+    -fx-min-height: 480;
+    -fx-background-color: AliceBlue;
+    -fx-font-size: 10pt;
+}
+
+.statusBtnBox{
+}
