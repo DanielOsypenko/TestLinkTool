@@ -1,8 +1,7 @@
 package com.msi;
 
-import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
 import com.google.gson.Gson;
-import com.google.gson.internal.LinkedTreeMap;
+import com.google.gson.reflect.TypeToken;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -21,9 +20,14 @@ public class ConfigManager {
 
     private final String configPath = "testlink-config.json";
     private static final Logger logger = LoggerFactory.getLogger(ConfigManager.class.getSimpleName());
-    public Config testProductConfig;
+    public Config config;
 
     public ConfigManager() {
+        config = Config.getInstance();
+    }
+
+    public Config getConfig() {
+        return config;
     }
 
     boolean checkConfigFile(){
@@ -54,8 +58,12 @@ public class ConfigManager {
         }
     }
 
-    public Map processConfig(){
-        Map customFieldsMap = null;
+    public void saveConfig(){
+        writeConfig(config.getConfigMap());
+    }
+
+    public HashMap getConfigBack(){
+        HashMap<String, String> customFieldsMap = null;
         if (checkConfigFile()) {
             try {
                 FileReader reader = new FileReader(configPath);
@@ -65,53 +73,82 @@ public class ConfigManager {
                 // TODO: read DEV_KEY
 
                 try {
-                    HashMap config = new Gson().fromJson(configJson.toString(), HashMap.class);
-                    customFieldsMap = (Map)config.get("customFields");
+                    HashMap<String, HashMap<String, String>> config = new Gson().fromJson(configJson.toString()
+                            , new TypeToken<HashMap<String, HashMap<String, String>>> (){}.getType());
+                    customFieldsMap = config.get("customFields");
                 } catch (ClassCastException e){
                     logger.error("can't read config file. please remove it\n" + ExceptionUtils.getStackTrace(e));
                 }
-                Config.customFields = new LinkedHashMap<>(customFieldsMap);
-
-
-
+                config.setCustomFields(new LinkedHashMap<>(customFieldsMap));
             } catch (IOException | ClassCastException | ParseException e) {
                 logger.error(ExceptionUtils.getStackTrace(e));
             }
         } else {
             createFile(configPath);
-            writeConfig(Config.configMap);
-            customFieldsMap = Config.customFields;
+            writeConfig(config.getConfigMap());
+            customFieldsMap = config.getCustomFields();
         }
 
         return customFieldsMap;
     }
 
     public static class Config {
-        public static String DEV_KEY = "";
-        public static HashMap<String, String> customFields = new LinkedHashMap<>(Map.ofEntries(
+
+        static Config config = null;
+
+        private Config() {
+        }
+
+        public static Config getInstance(){
+            if (config == null){
+                config = new Config();
+            }
+            return config;
+        }
+
+        private String DEV_KEY = "";
+        private LinkedHashMap<String, String> customFields = new LinkedHashMap<>(Map.ofEntries(
                 Map.entry("MP Firmware", "")
                 , Map.entry("PP Firmware", "")
                 , Map.entry("Main Board FPGA Version", "")
                 , Map.entry("Cabin Cam Firmware", "")
                 , Map.entry("Display FPGA", "")
                 , Map.entry("Front Cam Firmware", "")));
-        public static HashMap<String, HashMap<String, String>> configMap = new HashMap<>(Map.of("customFields", customFields));
+        private final LinkedHashMap<String, HashMap<String, String>> configMap = new LinkedHashMap<>(Map.of("customFields", customFields));
 
-        public static String getDevKey() {
+        public String getDEV_KEY() {
             return DEV_KEY;
         }
 
-        public static void setDevKey(String devKey) {
-            Config.DEV_KEY = devKey;
+        public void setCustomFields(LinkedHashMap<String, String> customFields) {
+            this.customFields = customFields;
+            this.configMap.get("customFields").putAll(customFields);
         }
 
-        static void loadCustomFields(JSONObject configJson){
+        public LinkedHashMap<String, HashMap<String, String>> getConfigMap() {
+            return configMap;
+        }
+
+        public LinkedHashMap<String, String> getCustomFields() {
+            return customFields;
+        }
+
+        public String getDevKey() {
+            return DEV_KEY;
+        }
+
+        public void setDevKey(String devKey) {
+            this.DEV_KEY = devKey;
+        }
+
+        public void loadCustomFields(JSONObject configJson){
             Map customFieldsJson = (Map)configJson.get("customFields");
-            customFields = new LinkedHashMap<String, String>(customFieldsJson);
+//            customFields = new LinkedHashMap<String, String>(customFieldsJson);
+            customFields.putAll(customFieldsJson);
             logger.info("config loaded from the file");
         }
 
-        static void updateCustomFields(Map<String, String> customFieldsLoc){
+        public void updateCustomFields(Map<String, String> customFieldsLoc){
             customFields.putAll(customFieldsLoc);
         }
     }
@@ -128,7 +165,7 @@ public class ConfigManager {
 
 
         ConfigManager configManager = new ConfigManager();
-        configManager.processConfig();
+        configManager.getConfigBack();
 
         logger.info("test passed");
     }

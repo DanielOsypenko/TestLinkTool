@@ -29,7 +29,7 @@ public class ToolManager {
 
     public static ToolManager toolManager;
 
-    public ToolManager(){
+    private ToolManager(){
         try {
             api = new TestLinkAPI(new URL(SERVER_URL), DEV_KEY);
         } catch (MalformedURLException e) {
@@ -41,7 +41,7 @@ public class ToolManager {
         return lock;
     }
 
-    public static ToolManager getManager(){
+    public static ToolManager getInstance(){
         if (toolManager == null){
             toolManager = new ToolManager();
         }
@@ -68,7 +68,7 @@ public class ToolManager {
 
     public static void main(String[] args) {
 
-        TestProjectApi testProjectApi = ToolManager.getManager().chooseProject("G3INCAR");
+        TestProjectApi testProjectApi = ToolManager.getInstance().chooseProject("G3INCAR");
         testProjectApi.chooseTestPlan("ECN Automation");
         testProjectApi.getTestPlanApi().getTestCasesAndSetExecutionStatusToTestCaseMap(true);
         Instant startTimer = Instant.now();

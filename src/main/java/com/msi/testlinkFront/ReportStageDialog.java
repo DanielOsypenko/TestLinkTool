@@ -1,15 +1,18 @@
 package com.msi.testlinkFront;
 
+import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
 import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
 import com.msi.ConfigManager;
 import com.msi.testlinkBack.ToolManager;
+import com.msi.testlinkBack.api.TestPlanApi;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -18,9 +21,7 @@ import javafx.stage.Window;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ReportStageDialog extends Stage {
@@ -36,17 +37,35 @@ public class ReportStageDialog extends Stage {
 
     VBox customFieldsBox = new VBox();
 
-    HBox statusAndSubmitBtnBox = new HBox();
-    Button passStatusBtn = new Button("Pass");
-    Button failStatusBtn = new Button("Fail");
-    Button blockStatusBtn = new Button("Block");
+    HBox statusBtnBox = new HBox();
+    RadioButton passStatusBtn = new RadioButton("Pass");
+    RadioButton failStatusBtn = new RadioButton("Fail");
+    RadioButton blockStatusBtn = new RadioButton("Block");
+    ToggleGroup executionStatusRBgroup= new ToggleGroup();
 
-    Button submitBtn = new Button("Submit");
+    HBox submitBtnDlgBox = new HBox();
+    Button submitBtnDlg = new Button("Submit");
 
+    AnchorPane anchorPaneCustomFieldsAndButtons = new AnchorPane();
+    ConfigManager configManager = new ConfigManager();
+
+    double padding = 4;
+
+    ExecutionStatus submitStatus = null;
 
     private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
 
     public ReportStageDialog() {
+        // initialize some elements.
+        // interface Initializable does not work in app twice, since it works against one FXML
+        submitBtnDlg.setOnAction(actionEvent -> {
+                    sendReport();
+                }
+        );
+        // read status from buttons
+        passStatusBtn.setToggleGroup(executionStatusRBgroup);
+        failStatusBtn.setToggleGroup(executionStatusRBgroup);
+        blockStatusBtn.setToggleGroup(executionStatusRBgroup);
     }
 
     public void setSelectedTests(List<String> selectedTests) {
@@ -69,55 +88,71 @@ public class ReportStageDialog extends Stage {
 
         listViewBox.getChildren().add(listView);
 
-        statusAndSubmitBtnBox.getChildren().addAll(passStatusBtn, failStatusBtn, blockStatusBtn);
-        submitBtn.setAlignment(Pos.BOTTOM_RIGHT);
-        statusAndSubmitBtnBox.getChildren().add(submitBtn);
-        statusAndSubmitBtnBox.setAlignment(Pos.TOP_RIGHT);
+        submitBtnDlgBox.getChildren().add(submitBtnDlg);
+        statusBtnBox.setAlignment(Pos.TOP_RIGHT);
+        statusBtnBox.getChildren().addAll(passStatusBtn, failStatusBtn, blockStatusBtn, submitBtnDlgBox);
 
-        VBox customFieldsBox = getCustomFields();
-        customFieldsBox.getChildren().addAll(statusAndSubmitBtnBox);
-        setStyles();
+        getRenderForCustomFields();
 
-        mainBox.getChildren().addAll(listViewBox,  customFieldsBox);
+        anchorPaneCustomFieldsAndButtons.getChildren().addAll(customFieldsBox, statusBtnBox);
+        mainBox.getChildren().addAll(
+                listViewBox,
+                anchorPaneCustomFieldsAndButtons
+        );
+
+
         setTitle("Submit results");
 
         Scene reportDialogScene = new Scene(mainBox, sceneSizeV, sceneSizeV1);
+        setStyles(reportDialogScene, sceneSizeV, sceneSizeV1);
 
         setScene(reportDialogScene);
 
     }
 
-    void setStyles(){
-        double mainBoxWidth = 640;
-        double mainBoxHigh = 480;
-        mainBox.getStylesheets().add(
+    void setStyles(Scene reportDialogScene, double mainBoxWidth, double mainBoxHigh){
+
+        reportDialogScene.getStylesheets().add(
                 Objects.requireNonNull(mainBox.getClass().getResource("/styles.css")).toExternalForm());
         mainBox.getStyleClass().add("submitDialog");
         mainBox.setMinSize(mainBoxWidth, mainBoxHigh);
-        listViewBox.getStyleClass().add("selectedTestList");
-        listViewBox.setMinHeight(mainBox.getHeight());
-        listViewBox.setMinWidth(mainBoxWidth/2);
 
-        listView.setMinWidth(mainBoxWidth/2);
+        mainBox.getStyleClass().add("statusBtnBox");
+        mainBox.getStyleClass().add("submitBtnDlgBox");
 
-        customFieldsBox.setMinHeight(mainBox.getHeight());
+        listView.getStyleClass().add("listView");
+        listView.setMinHeight(mainBox.getHeight() - padding*2);
+        listView.setMaxWidth(mainBoxWidth/2 - padding*1.5);
+        listView.setMinWidth(mainBoxWidth/9*5 - padding*1.5);
 
-        statusAndSubmitBtnBox.getStyleClass().add("statusBtnBox");
-        submitBtn.getStyleClass().add("submitBtnFromDialog");
+
+
+        customFieldsBox.setMaxWidth(mainBox.getWidth()/2 - padding*1.5) ;
+        customFieldsBox.setPadding(new Insets(0d, 0d, 0d, padding));
+        customFieldsBox.setMaxHeight(mainBox.getHeight()/2 - padding*2);
+
+        statusBtnBox.setPadding(new Insets(0d, padding, 0d,padding));
+        statusBtnBox.setSpacing(4);
+        submitBtnDlgBox.setPadding(new Insets(0d, padding, 0d, 80));
+
+        AnchorPane.setTopAnchor(customFieldsBox, 0d);
+        AnchorPane.setBottomAnchor(statusBtnBox, 0d);
     }
 
 
-    private VBox getCustomFields() {
+    private VBox getRenderForCustomFields() {
         // read configuration
-        ConfigManager configManager = new ConfigManager();
-        configManager.processConfig();
-        Map<String, String> customFields = ConfigManager.Config.customFields;
+
+        configManager.getConfigBack();
+        Map<String, String> customFields = configManager.getConfigBack();
 
         // add all custom fields from json. the number and titles of fields are secured in code
 
         customFields.forEach((k,v)-> {
             HBox oneFieldHBOX = new HBox();
+            oneFieldHBOX.setSpacing(padding);
             oneFieldHBOX.getChildren().addAll(new TextField(k), new TextField(v));
+            oneFieldHBOX.setPadding(new Insets(padding, padding, padding,padding));
             customFieldsBox.getChildren().add(oneFieldHBOX);
         });
         return customFieldsBox;
@@ -127,29 +162,66 @@ public class ReportStageDialog extends Stage {
         this.parentStage = parentStage;
     }
 
-    public void reportResluts(){
-        ToolManager toolManager = ToolManager.getManager();
-
-
-
-
-//        List<Integer> idsSelected = sendReport();
-//
-//        if (idsSelected.size() > 0) {
-//            toolManager.getTestProjectApi().getTestPlanApi()
-//                    .reportResult(ExecutionStatus.PASSED, idsSelected.toArray(Integer[]::new));
-//        }
-    }
 
     private List<Integer> sendReport() {
+        TestPlanApi testPlanApi = ToolManager.getInstance().getTestProjectApi().getTestPlanApi();
+
         List <String> externalFullIds = selectedTests.stream()
                 .map(tcStr -> tcStr.substring(0, tcStr.indexOf(":"))).collect(Collectors.toList());
 
         // may be worth to optimize - find issue why all multiple chosen tests appears in list twice
         // current solution .distinct()
-        List<Integer> idsSelected = ToolManager.getManager().getTestProjectApi().getTestPlanApi().getAllTestCasesFromSuiteTree()
+        List<Integer> idsSelected = testPlanApi.getAllTestCasesFromSuiteTree()
                 .stream().filter(tc -> externalFullIds.contains(tc.getFullExternalId()))
                 .map(TestCase::getId).distinct().collect(Collectors.toList());
+
+        // get custom fields
+        collectNewCustomFields();
+        // save new custom fields
+        configManager.saveConfig();
+
+        // get status
+        if (passStatusBtn.isSelected()){
+            submitStatus = ExecutionStatus.PASSED;
+        } else if (failStatusBtn.isSelected()){
+            submitStatus = ExecutionStatus.FAILED;
+        } else if (blockStatusBtn.isSelected()){
+            submitStatus = ExecutionStatus.BLOCKED;
+        }
+        logger.info("status '" + submitStatus.name() + "' will be reported");
+        // report
+        //testPlanApi.reportResult()
+
+        logger.info(">>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<");
+        // save custom fi
+
+
         return idsSelected;
     }
+
+    private void collectNewCustomFields() {
+        ObservableList<Node> customFieldsFront = customFieldsBox.getChildren();
+//        HashMap<String, String> customFields = configManager.getConfig().getCustomFields()
+        LinkedHashMap<String, String> customFieldsBack = configManager.getConfig().getCustomFields();
+        Set<String> customFieldsKeys = customFieldsBack.keySet();
+
+        for (Object node: customFieldsFront){
+            if (node instanceof HBox){
+                ObservableList<Node> textFields = ((HBox) node).getChildren();
+                for (int i = 0; i < textFields.size(); i++){
+                    Object nodeEmb = textFields.get(i);
+                    if (nodeEmb instanceof TextField){
+                        String textStr = ((TextField) nodeEmb).getText();
+                        if (customFieldsKeys.contains(textStr)){
+                            logger.info("new custom field is " + textStr + " : " + ((TextField)textFields.get(i+1)).getText());
+                            customFieldsBack.put(textStr, ((TextField)textFields.get(i+1)).getText());
+                        }
+                    }
+                }
+            }
+        }
+        configManager.getConfig().setCustomFields(customFieldsBack);
+    }
+
+
 }

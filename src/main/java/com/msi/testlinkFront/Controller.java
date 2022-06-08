@@ -5,7 +5,6 @@ import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
 import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
 import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
 import br.eti.kinoshita.testlinkjavaapi.model.TestSuite;
-import com.msi.ConfigManager;
 import com.msi.ExceptionListenerCustom;
 import com.msi.testlinkBack.ToolManager;
 import com.msi.testlinkBack.api.TestPlanApi;
@@ -54,7 +53,7 @@ public class Controller implements Initializable {
     ToolManager toolManager;
 
     public Controller() {
-        toolManager = ToolManager.getManager();
+        toolManager = ToolManager.getInstance();
     }
 
     @FXML
@@ -143,7 +142,7 @@ public class Controller implements Initializable {
             Window mainWindow = main.getScene().getWindow();
             reportStageDialog = new ReportStageDialog();
             reportStageDialog.setParentWindow(mainWindow);
-            reportStageDialog.setDialogWindow(640, 480);
+            reportStageDialog.setDialogWindow(800, 600);
             List<String> selectedTests = testPlanView.getSelectionModel().getSelectedItems().stream()
                     .map(TreeItem::getValue).collect(Collectors.toList());
             reportStageDialog.setSelectedTests(selectedTests);

@@ -47,7 +47,7 @@ public class TestPlanApi extends TestPlanListener {
 
     public TestPlanApi() {
 //        this.testPlanListener = ((TestPlanListener) this);
-        ToolManager manager = ToolManager.getManager();
+        ToolManager manager = ToolManager.getInstance();
         this.api = manager.getApi();
         this.testProjectApi = manager.getTestProjectApi();
     }

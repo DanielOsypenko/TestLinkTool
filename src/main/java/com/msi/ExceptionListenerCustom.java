@@ -7,7 +7,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,12 +54,12 @@ public class ExceptionListenerCustom implements Runnable {
     @Override
     public void run() {
         while (true) {
-            ReentrantLock lock = ToolManager.getManager().getLock();
+            ReentrantLock lock = ToolManager.getInstance().getLock();
             try {
                 synchronized (lock) {
                     lock.wait();
                     showPopupMessage("TestLink error. Check your permissions", stage);
-                    ToolManager.getManager().getTestProjectApi().getTestPlanApi().setTestPlan(null);
+                    ToolManager.getInstance().getTestProjectApi().getTestPlanApi().setTestPlan(null);
 
                     break;
                 }

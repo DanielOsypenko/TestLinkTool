@@ -19,7 +19,7 @@ public class TestProjectApi {
     private static final Logger logger = LoggerFactory.getLogger(TestLinkAPI.class.getSimpleName());
 
     public TestProjectApi(String projectName) {
-        this.api = ToolManager.getManager().getApi();
+        this.api = ToolManager.getInstance().getApi();
         this.setTestProject(projectName);
     }
 

@@ -36,10 +36,10 @@ public class TestPlanListener implements Runnable{
     protected Integer buildIdLast;
 
     static final Logger logger = LoggerFactory.getLogger(TestPlanListener.class.getSimpleName());
-    final Object lock = ToolManager.getManager().getLock();
+    final Object lock = ToolManager.getInstance().getLock();
 
     public TestPlanListener() {
-        ToolManager manager = ToolManager.getManager();
+        ToolManager manager = ToolManager.getInstance();
         this.api = manager.getApi();
         this.testProjectApi = manager.getTestProjectApi();
     }
@@ -68,7 +68,6 @@ public class TestPlanListener implements Runnable{
                 // raise popup
                 synchronized (lock){
                     lock.notifyAll();
-                    logger.error(">>>>>>>>>>>>>>>>> 1 " + lock);
                 }
             }
             sleep(5);
@@ -127,7 +126,7 @@ public class TestPlanListener implements Runnable{
     }
 
     public List<TestCase> getTestCasesForTestPlan(boolean update) throws TestLinkAPIException {
-        if (ToolManager.getManager().getTestProjectApi().getProjectName() != null && this.testPlanName != null) {
+        if (ToolManager.getInstance().getTestProjectApi().getProjectName() != null && this.testPlanName != null) {
             if (update) {
                 TestCase[] testCases = api.getTestCasesForTestPlan(
                         this.testPlanId
