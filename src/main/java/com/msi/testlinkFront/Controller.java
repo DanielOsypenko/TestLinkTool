@@ -1,10 +1,8 @@
 package com.msi.testlinkFront;
 
 import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
-import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
-import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
-import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
-import br.eti.kinoshita.testlinkjavaapi.model.TestSuite;
+import br.eti.kinoshita.testlinkjavaapi.model.*;
+import com.msi.ConfigManager;
 import com.msi.ExceptionListenerCustom;
 import com.msi.testlinkBack.ToolManager;
 import com.msi.testlinkBack.api.TestPlanApi;
@@ -16,12 +14,15 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.effect.ColorAdjust;
 import javafx.scene.effect.Light;
 import javafx.scene.effect.Lighting;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -29,6 +30,7 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
+import org.controlsfx.control.Notifications;
 import org.controlsfx.control.textfield.CustomTextField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,22 +40,32 @@ import java.util.stream.Collectors;
 
 
 //TODO: limit the progress icon in time and add notification on failure
-//TODO: update list of the selected tests - DONE
+//TODO: update list of the selected tests                                           - DONE
 //TODO: refresh list of tests by button
 //TODO: fix thread leak in a test plan.
-//TODO: open submit window works from second attempt - DONE
+//TODO: open submit window works from second attempt                                - DONE
 //TODO: update selected test cases for submit view
 //TODO: set dev key in opened popup with ? sign and image of where to search it
 //TODO: no rights - terminate progressing
-//TODO: read fields to submit window
+//TODO: read fields to submit window                                                - DONE
+//TODO: change warning text and font size
+//TODO: add text field for notifications in report dialog
+//TODO: change favicon from default
+//TODO: adjust size of the list from main window                                    - DONE
+//TODO: set dev key field with ?-help symbol                                        - DONE
+//TODO: progress for reporting
 
 public class Controller implements Initializable {
     private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
 
     ToolManager toolManager;
+    ConfigManager configManager;
 
     public Controller() {
-        toolManager = ToolManager.getInstance();
+        configManager = ConfigManager.getInstance();
+        configManager.getConfigBack();
+        String devKey = configManager.getConfig().getDevKey();
+        toolManager = ToolManager.getInstance(devKey);
     }
 
     @FXML
@@ -71,10 +83,6 @@ public class Controller implements Initializable {
 
     private ProgressIndicator pb;
 
-    @FXML
-    private ListView testSuitsListView;
-
-
     String expandText = "Expand";
     String collapseText = "Collapse";
 
@@ -83,12 +91,7 @@ public class Controller implements Initializable {
 
     @FXML
     public Button reportBtn;
-
-    @FXML
-    public Button submitBtn;
     private ReportStageDialog reportStageDialog;
-//    @FXML
-//    public TextField executionStatusNums;
 
     @FXML
     public CustomTextField executionStatusNumsPass;
@@ -103,21 +106,27 @@ public class Controller implements Initializable {
     public CustomTextField executionStatusNumsBlocked;
 
     @FXML
-    private ListView<String> tcsNames;
-
-    @FXML
     private StackPane testSuitsTreePane;
     TreeItem<String> testCasesTree;
 
     private TreeView<String> testPlanView;
 
+    @FXML
+    public Button refreshListBtn;
+
+    @FXML
+    private TextField devKeyTextField;
+
+    @FXML
+    private Button saveDevKey;
+
+    @FXML Button howToSetDevKey;
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         testPlanListBox.setDisable(true);
-//        getTestSuitesBtn.setDisable(true);
         expandListBtn.setText(expandText);
         expandListBtn.setDisable(true);
-
 
         List <CustomTextField> statusFields = List.of(executionStatusNumsPass
                 , executionStatusNumsNotRun
@@ -133,14 +142,40 @@ public class Controller implements Initializable {
         executionStatusNumsBlocked.setPromptText("Blocked");
         statusFields.forEach(cf -> cf.setEditable(false));
 
-        submitBtn.setDisable(true);
+        devKeyTextField.setPromptText("Developer key");
+        initSaveDevKeyBtn();
+        initHowTo();
+        initRefreshButton();
         reportBtn.setDisable(true);
     }
 
+    private void initHowTo() {
+        Image qIcon = new Image("sym_question.gif");
+        howToSetDevKey.setGraphic(new ImageView(qIcon));
+        Image howToImage = new Image("hlp1.png");
+        ImageView howToImageView = new ImageView(howToImage);
+        BorderPane bp = new BorderPane();
+        bp.setCenter(howToImageView);
+        Scene hlpScene = new Scene(bp);
+        Stage hlpStage = new Stage();
+        hlpStage.setTitle("How to add Developer Key from Test Link");
+        hlpStage.getIcons().add(qIcon);
+        howToSetDevKey.setOnMousePressed(actionEvent -> {
+            if (!hlpStage.isShowing()) {
+                hlpStage.setScene(hlpScene);
+                hlpStage.showAndWait();
+            }
+        });
+        howToSetDevKey.setOnMouseReleased(actionEvent -> {
+            hlpStage.close();
+        });
+    }
+
     private void initSubmitButton() {
-        submitBtn.setOnAction(actionEvent -> {
+        reportBtn.setOnAction(actionEvent -> {
             Window mainWindow = main.getScene().getWindow();
             reportStageDialog = new ReportStageDialog();
+            reportStageDialog.getIcons().add(new Image("tl-logo.png"));
             reportStageDialog.setParentWindow(mainWindow);
             reportStageDialog.setDialogWindow(800, 600);
             List<String> selectedTests = testPlanView.getSelectionModel().getSelectedItems().stream()
@@ -150,7 +185,30 @@ public class Controller implements Initializable {
         });
     }
 
+    private void initRefreshButton(){
+        refreshListBtn.setOnAction(actionEvent -> {
+            renderTestSuiteTree();
+        });
+    }
 
+
+    private void initSaveDevKeyBtn(){
+        saveDevKey.setOnAction(actionEvent -> {
+            logger.info("saving dev key");
+            String devKeyText = devKeyTextField.getText();
+            if (devKeyText != null && !devKeyText.isEmpty()) {
+                configManager.getConfig().setDevKey(devKeyText);
+                configManager.writeConfig(configManager.getConfig().getConfigMap());
+                toolManager = ToolManager.resetInstance(devKeyText);
+            } else {
+                Notifications.create()
+                        .title("Warning")
+                        .position(Pos.CENTER)
+                        .text("Set Dev Key from TestLink/User management/Generate a new key")
+                        .showWarning();
+            }
+        });
+    }
 
     @FXML
     protected void onAppearanceSetProject() {
@@ -167,7 +225,7 @@ public class Controller implements Initializable {
         testProjectListBox.setOnAction((event) -> {
             testPlanListBox.setVisibleRowCount(10);
             testPlanListBox.setDisable(true);
-            refreshStatusNumBar();
+            resetStatusNumBar();
             String selectedItem = testProjectListBox.getSelectionModel().getSelectedItem();
             if (selectedItem != null) toolManager.chooseProject(selectedItem);
             logger.info("selected test project = " + selectedItem);
@@ -195,70 +253,70 @@ public class Controller implements Initializable {
             testPlanListBox.setItems(testPlansList);
             testPlanListBox.setOnAction((event) -> {
 
-                // TODO: remove previous valuefrom the list when new Project was selected
-
-               // testPlanListBox.setDisable(false);
                 String selectedItem = testPlanListBox.getSelectionModel().getSelectedItem();
                 if (selectedItem != null) {
                     toolManager.getTestProjectApi().chooseTestPlan(selectedItem);
                     logger.info("selected test plan = " + selectedItem);
-
-
-                    GetPlanService getPlanService = new GetPlanService();
-                    getPlanService.setTestPlanApi(toolManager.getTestProjectApi().getTestPlanApi());
-                    getPlanService.setSecAbort(30);
-                    getPlanService.setOnRunning(workerStateEvent -> {
-                        pb = new ProgressIndicator();
-                        testSuitsTreePane.getChildren().add(pb);
-                    });
-                    getPlanService.setOnSucceeded(workerStateEvent -> {
-                        Object testSuiteListMap = workerStateEvent.getSource().getValue();
-
-                        // check that object from resp - (Map<TestSuite, List<TestCase>>
-                        // move to helpers
-                        boolean mapSuitable = false;
-                        if (testSuiteListMap instanceof Map){
-                            for (Map.Entry<?, ?> entry : ((Map<?, ?>) testSuiteListMap).entrySet()) {
-                                Object k = entry.getKey();
-                                Object v = entry.getValue();
-                                if (k instanceof TestSuite) {
-                                    if (v instanceof List) {
-                                        if (new LinkedList((List) v).pollLast() instanceof TestCase) {
-                                            mapSuitable = true;
-                                        }
-                                    }
-                                    break;
-                                }
-                            }
-                        }
-                        if (mapSuitable){
-                            buildTestSuitsAndCasesTree((LinkedHashMap<TestSuite, List<TestCase>>) workerStateEvent.getSource().getValue());
-                        } else {
-                            logger.error("resp from getPlanService on succession is not suitable.");
-                        }
-                    });
-
-                    getPlanService.setOnCancelled(workerStateEvent -> {
-                        logger.info("CANCELED");
-                        getPlanService.reset();
-                    });
-
-
-                    getPlanService.start();
-
-                    setUpdateTestResults();
-
-                    initSubmitButton();
-                    submitBtn.setDisable(false);
-//                    getTestSuitesBtn.setDisable(false);
+                    renderTestSuiteTree();
                 } else {
                     logger.error("select project before selection test plan");
-//                    getTestSuitesBtn.setDisable(true);
                 }
             });
         } else {
             testPlanListBox.setDisable(true);
         }
+    }
+
+    private void renderTestSuiteTree() {
+        GetPlanService getPlanService = new GetPlanService();
+        getPlanService.setTestPlanApi(toolManager.getTestProjectApi().getTestPlanApi());
+        getPlanService.setSecAbort(30);
+
+        getPlanService.setOnRunning(workerStateEvent -> {
+            pb = new ProgressIndicator();
+            testSuitsTreePane.getChildren().add(pb);
+        });
+
+        getPlanService.setOnSucceeded(workerStateEvent -> {
+            Object testSuiteListMap = workerStateEvent.getSource().getValue();
+
+            // check that object from resp - (Map<TestSuite, List<TestCase>>
+            // move to helpers
+            boolean mapSuitable = false;
+            if (testSuiteListMap instanceof Map){
+                for (Map.Entry<?, ?> entry : ((Map<?, ?>) testSuiteListMap).entrySet()) {
+                    Object k = entry.getKey();
+                    Object v = entry.getValue();
+                    if (k instanceof TestSuite) {
+                        if (v instanceof List) {
+                            if (new LinkedList((List) v).pollLast() instanceof TestCase) {
+                                mapSuitable = true;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            if (mapSuitable){
+                buildTestSuitsAndCasesTree((LinkedHashMap<TestSuite, List<TestCase>>) testSuiteListMap);
+            } else {
+                logger.error("resp from getPlanService on succession is not suitable.");
+            }
+        });
+
+        getPlanService.setOnCancelled(workerStateEvent -> {
+            logger.info("CANCELED");
+            getPlanService.reset();
+        });
+
+
+        getPlanService.start();
+
+        setUpdateTestResults();
+
+        initSubmitButton();
+        expandListBtn.setText(expandText);
+        reportBtn.setDisable(false);
     }
 
     /* Method to continuously update status of the execution. Works only when TestPlan is selected
@@ -400,7 +458,7 @@ public class Controller implements Initializable {
         executionStatusNumsBlocked.setText("Blocked: " + testPlanApi.getTestCasesActualBlockedNum());
     }
 
-    private void refreshStatusNumBar(){
+    private void resetStatusNumBar(){
         executionStatusNumsPass.setText("");
         executionStatusNumsNotRun.setText("");
         executionStatusNumsFailed.setText("");

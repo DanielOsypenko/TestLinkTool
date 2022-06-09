@@ -45,11 +45,13 @@
             <StackPane fx:id="testSuitsTreePane"/>
         </ListView>
     </VBox>
-    <HBox fx:id="suiteButtons" alignment="TOP_LEFT">
+    <HBox fx:id="buttonsBar" alignment="TOP_LEFT">
         <Button fx:id="expandListBtn" onAction="#onExpandList"/>
-        <!-- action func for submit is not defined on xml. Setting popup window should be called on initialize in controller -->
-        <Button fx:id="submitBtn" text="Submit"/>
-        <Button fx:id="reportBtn" text="Report" onAction="#onReportResults"/>
-
+        <Button fx:id="refreshListBtn" text="Refresh List"/>
+        <Button fx:id="reportBtn" text="Report"/>
+        <HBox minWidth="450"/>
+        <TextField fx:id="devKeyTextField" promptText="Enter dev key from Test Link"/>
+        <Button fx:id="saveDevKey" text="Save DEV KEY"/>
+        <Button fx:id="howToSetDevKey"/>
     </HBox>
 </VBox>

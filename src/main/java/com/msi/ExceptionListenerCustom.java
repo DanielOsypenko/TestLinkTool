@@ -10,12 +10,12 @@ import javafx.stage.Stage;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ExceptionListenerCustom implements Runnable {
 
     Stage stage;
-
 
     private static final Logger logger = LoggerFactory.getLogger(ExceptionListenerCustom.class.getSimpleName());
 
@@ -23,7 +23,7 @@ public class ExceptionListenerCustom implements Runnable {
         this.stage = stage;
     }
 
-    static Popup createPopup(String message){
+    static Popup createPopup(String message) {
         final Popup popup = new Popup();
         popup.setAutoFix(true);
         popup.setAutoHide(true);
@@ -34,17 +34,17 @@ public class ExceptionListenerCustom implements Runnable {
         return popup;
     }
 
-    public static void showPopupMessage(String message, Stage stage){
+    public static void showPopupMessage(String message, Stage stage) {
         logger.info("showing popup message:" + message);
         final Popup popup = createPopup(message);
         popup.setOnShown(windowEvent -> {
-            popup.setX(stage.getX() + stage.getWidth()/2 - popup.getWidth()/2);
-            popup.setY(stage.getY() + stage.getHeight()/2 - popup.getHeight()/2);
+            popup.setX(stage.getX() + stage.getWidth() / 2 - popup.getWidth() / 2);
+            popup.setY(stage.getY() + stage.getHeight() / 2 - popup.getHeight() / 2);
         });
-        Platform.runLater(()->popup.show(stage));
+        Platform.runLater(() -> popup.show(stage));
         // disable progress indicator when popup comes
-        for (Node node : stage.getScene().getRoot().getChildrenUnmodifiable()){
-            if (node instanceof ProgressIndicator){
+        for (Node node : stage.getScene().getRoot().getChildrenUnmodifiable()) {
+            if (node instanceof ProgressIndicator) {
                 logger.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> found PI");
                 node.setVisible(false);
             }
@@ -64,7 +64,7 @@ public class ExceptionListenerCustom implements Runnable {
                     break;
                 }
             } catch (Exception e) {
-                logger.info("Unlocked "  + ExceptionUtils.getStackTrace(e));
+                logger.info("Unlocked " + ExceptionUtils.getStackTrace(e));
             }
         }
     }

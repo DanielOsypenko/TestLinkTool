@@ -9,9 +9,6 @@
     -fx-border-color: #D3D3D3;
 }
 
-#testProjectListHBox{
-
-}
 #testProjectListBox {
     -fx-min-width: 200;
     -fx-max-width: 200;
@@ -23,8 +20,15 @@
 }
 #testSuitsPaneVbox {
     -fx-padding: 0;
+    -fx-pref-height: 720;
+}
+#testSuitsListView{
+    -fx-pref-height: inherit;
+    -fx-padding: 0;
 }
 #testSuitsTreePane {
+    -fx-padding: 0;
+    -fx-pref-height: 720;
     -fx-font-size: 10pt;
 }
 #suiteButtons{
@@ -33,15 +37,13 @@
 #testPlanProjectListHBox{
     -fx-spacing: 4;
 }
-/*#testSuitsListView{*/
-/*    -fx-min-width: 0;*/
-/*    -fx-pref-width: 0;*/
-/*    -fx-max-width: 0;*/
-
-/*    -fx-min-height: 0;*/
-/*    -fx-pref-height: 0;*/
-/*    -fx-max-height: 0;*/
-/*}*/
+#buttonsBar{
+    -fx-spacing: 4;
+}
+#devKey{
+    -fx-min-width: 180;
+    -fx-start-margin: 300;
+}
 
 .submitDialog{
     -fx-min-width: 640;
@@ -54,6 +56,13 @@
 .button {
     -fx-font-size: 10pt;
     -fx-spacing: 4;
+}
+#howToSetDevKey{
+    -fx-max-width: 15;
+    -fx-max-height: 15;
+    -fx-background-radius: 15;
+    -fx-background-color: AliceBlue;
+    -fx-padding: 3;
 }
 
 .submitDialog.statusBtnBox{

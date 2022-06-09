@@ -20,7 +20,6 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -47,12 +46,14 @@ public class ReportStageDialog extends Stage {
     Button submitBtnDlg = new Button("Submit");
 
     AnchorPane anchorPaneCustomFieldsAndButtons = new AnchorPane();
-    ConfigManager configManager = new ConfigManager();
+    ConfigManager configManager = ConfigManager.getInstance();
 
-    double padding = 4;
+    HBox notificationTextAreaBox = new HBox();
+    TextArea notificationTextArea = new TextArea();
+
 
     ExecutionStatus submitStatus = null;
-
+    double padding = 4;
     private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
 
     public ReportStageDialog() {
@@ -94,26 +95,25 @@ public class ReportStageDialog extends Stage {
 
         getRenderForCustomFields();
 
+        notificationTextAreaBox.getChildren().add(notificationTextArea);
+        customFieldsBox.getChildren().add(notificationTextAreaBox);
         anchorPaneCustomFieldsAndButtons.getChildren().addAll(customFieldsBox, statusBtnBox);
         mainBox.getChildren().addAll(
                 listViewBox,
                 anchorPaneCustomFieldsAndButtons
         );
 
-
-        setTitle("Submit results");
+        setTitle("Report results");
 
         Scene reportDialogScene = new Scene(mainBox, sceneSizeV, sceneSizeV1);
         setStyles(reportDialogScene, sceneSizeV, sceneSizeV1);
-
         setScene(reportDialogScene);
-
     }
 
     void setStyles(Scene reportDialogScene, double mainBoxWidth, double mainBoxHigh){
-
         reportDialogScene.getStylesheets().add(
-                Objects.requireNonNull(mainBox.getClass().getResource("/styles.css")).toExternalForm());
+                Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                        .getResource("styles.css")).toExternalForm());
         mainBox.getStyleClass().add("submitDialog");
         mainBox.setMinSize(mainBoxWidth, mainBoxHigh);
 
@@ -125,8 +125,6 @@ public class ReportStageDialog extends Stage {
         listView.setMaxWidth(mainBoxWidth/2 - padding*1.5);
         listView.setMinWidth(mainBoxWidth/9*5 - padding*1.5);
 
-
-
         customFieldsBox.setMaxWidth(mainBox.getWidth()/2 - padding*1.5) ;
         customFieldsBox.setPadding(new Insets(0d, 0d, 0d, padding));
         customFieldsBox.setMaxHeight(mainBox.getHeight()/2 - padding*2);
@@ -135,19 +133,19 @@ public class ReportStageDialog extends Stage {
         statusBtnBox.setSpacing(4);
         submitBtnDlgBox.setPadding(new Insets(0d, padding, 0d, 80));
 
+        notificationTextArea.setPromptText("Notification");
+        notificationTextAreaBox.setPrefSize(180, mainBoxHigh/2);
+
         AnchorPane.setTopAnchor(customFieldsBox, 0d);
         AnchorPane.setBottomAnchor(statusBtnBox, 0d);
     }
-
 
     private VBox getRenderForCustomFields() {
         // read configuration
 
         configManager.getConfigBack();
-        Map<String, String> customFields = configManager.getConfigBack();
-
+        Map<String, String> customFields = configManager.getConfig().getCustomFields();
         // add all custom fields from json. the number and titles of fields are secured in code
-
         customFields.forEach((k,v)-> {
             HBox oneFieldHBOX = new HBox();
             oneFieldHBOX.setSpacing(padding);
@@ -189,19 +187,18 @@ public class ReportStageDialog extends Stage {
             submitStatus = ExecutionStatus.BLOCKED;
         }
         logger.info("status '" + submitStatus.name() + "' will be reported");
+
         // report
-        //testPlanApi.reportResult()
-
-        logger.info(">>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<");
-        // save custom fi
-
-
+        testPlanApi.reportResult(submitStatus
+                , configManager.getConfig().getCustomFields()
+                , notificationTextArea.getText()
+                , idsSelected.toArray(Integer[]::new)
+        );
         return idsSelected;
     }
 
     private void collectNewCustomFields() {
         ObservableList<Node> customFieldsFront = customFieldsBox.getChildren();
-//        HashMap<String, String> customFields = configManager.getConfig().getCustomFields()
         LinkedHashMap<String, String> customFieldsBack = configManager.getConfig().getCustomFields();
         Set<String> customFieldsKeys = customFieldsBack.keySet();
 
