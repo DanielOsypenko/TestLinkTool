@@ -41,7 +41,8 @@ import java.util.stream.Collectors;
 
 //TODO: limit the progress icon in time and add notification on failure
 //TODO: update list of the selected tests                                           - DONE
-//TODO: refresh list of tests by button
+//TODO: refresh list of tests by button                                             - DONE
+//TODO: refresh list set disable while no list available
 //TODO: fix thread leak in a test plan.
 //TODO: open submit window works from second attempt                                - DONE
 //TODO: update selected test cases for submit view
@@ -74,7 +75,6 @@ public class Controller implements Initializable {
     @FXML
     public HBox testPlanProjectListHBox;
 
-    // TODO: place testProjectListBox and testPlanListBox on the same line
     @FXML
     private ComboBox<String> testProjectListBox;
 
@@ -146,6 +146,7 @@ public class Controller implements Initializable {
         initSaveDevKeyBtn();
         initHowTo();
         initRefreshButton();
+        refreshListBtn.setDisable(true);
         reportBtn.setDisable(true);
     }
 
@@ -175,6 +176,7 @@ public class Controller implements Initializable {
         reportBtn.setOnAction(actionEvent -> {
             Window mainWindow = main.getScene().getWindow();
             reportStageDialog = new ReportStageDialog();
+            reportStageDialog.setResizable(false);
             reportStageDialog.getIcons().add(new Image("tl-logo.png"));
             reportStageDialog.setParentWindow(mainWindow);
             reportStageDialog.setDialogWindow(800, 600);
@@ -227,22 +229,24 @@ public class Controller implements Initializable {
             testPlanListBox.setDisable(true);
             resetStatusNumBar();
             String selectedItem = testProjectListBox.getSelectionModel().getSelectedItem();
-            if (selectedItem != null) toolManager.chooseProject(selectedItem);
-            logger.info("selected test project = " + selectedItem);
-            //TODO get test plan
-            testPlanListBox.setDisable(false);
-
-            // set exception listener bonded with runTestPlanListener
-            ExceptionListenerCustom exceptionListener = new ExceptionListenerCustom((Stage)main.getScene().getWindow());
-            Thread exceptionListenerThread = new Thread(exceptionListener);
-            exceptionListenerThread.start();
+            if (selectedItem != null) {
+                toolManager.chooseProject(selectedItem);
+                logger.info("selected test project = " + selectedItem);
+                testPlanListBox.setDisable(false);
+                reportBtn.setDisable(true);
+                testSuitsTreePane.getChildren().clear();
+                // set exception listener bonded with runTestPlanListener
+                ExceptionListenerCustom exceptionListener = new ExceptionListenerCustom((Stage)main.getScene().getWindow());
+                Thread exceptionListenerThread = new Thread(exceptionListener);
+                exceptionListenerThread.start();
+            }
         });
     }
 
     @FXML
     protected void onAppearanceSetTestPlan() {
         if (toolManager.getTestProjectApi()!= null && toolManager.getTestProjectApi().getTestProject() != null) {
-            testPlanListBox.setVisibleRowCount(5);
+            testPlanListBox.setVisibleRowCount(10);
             TestPlan[] testPlans = toolManager.getTestProjectApi().getTestPlans();
             ObservableList<String> testPlansList = FXCollections.observableArrayList();
             Arrays.stream(testPlans).forEach(tp -> {
@@ -258,6 +262,8 @@ public class Controller implements Initializable {
                     toolManager.getTestProjectApi().chooseTestPlan(selectedItem);
                     logger.info("selected test plan = " + selectedItem);
                     renderTestSuiteTree();
+                    refreshListBtn.setDisable(false);
+                    reportBtn.setDisable(true);
                 } else {
                     logger.error("select project before selection test plan");
                 }
@@ -278,13 +284,16 @@ public class Controller implements Initializable {
         });
 
         getPlanService.setOnSucceeded(workerStateEvent -> {
-            Object testSuiteListMap = workerStateEvent.getSource().getValue();
+            Object testSuiteListMapObj = workerStateEvent.getSource().getValue();
 
             // check that object from resp - (Map<TestSuite, List<TestCase>>
             // move to helpers
             boolean mapSuitable = false;
-            if (testSuiteListMap instanceof Map){
-                for (Map.Entry<?, ?> entry : ((Map<?, ?>) testSuiteListMap).entrySet()) {
+            if (testSuiteListMapObj instanceof Map){
+                // set order by alphabet
+                // Map<TestSuite, List<TestCase>>
+
+                for (Map.Entry<?, ?> entry : ((Map<?, ?>) testSuiteListMapObj).entrySet()) {
                     Object k = entry.getKey();
                     Object v = entry.getValue();
                     if (k instanceof TestSuite) {
@@ -298,7 +307,15 @@ public class Controller implements Initializable {
                 }
             }
             if (mapSuitable){
-                buildTestSuitsAndCasesTree((LinkedHashMap<TestSuite, List<TestCase>>) testSuiteListMap);
+                LinkedHashMap<TestSuite, List<TestCase>> testSuiteListMap = (LinkedHashMap<TestSuite, List<TestCase>>) testSuiteListMapObj;
+                LinkedHashMap<TestSuite, List<TestCase>> testSuiteListMapSorted = testSuiteListMap.entrySet().stream().sorted(new Comparator<Map.Entry<TestSuite, List<TestCase>>>() {
+                    @Override
+                    public int compare(Map.Entry<TestSuite, List<TestCase>> o1, Map.Entry<TestSuite, List<TestCase>> o2) {
+                        return o1.getKey().getName().compareTo(o2.getKey().getName());
+                    }
+                }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x,y) -> y, LinkedHashMap::new));
+
+                buildTestSuitsAndCasesTree(testSuiteListMapSorted);
             } else {
                 logger.error("resp from getPlanService on succession is not suitable.");
             }
@@ -365,6 +382,7 @@ public class Controller implements Initializable {
 
         testCasesTree = createTestCasesTree(testSuitesPerTestCases);
         if (testCasesTree != null) {
+            // expends 1st level
             testCasesTree.setExpanded(true);
             testPlanView = new TreeView<>(testCasesTree);
             testPlanView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);

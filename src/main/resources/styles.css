@@ -57,12 +57,20 @@
     -fx-font-size: 10pt;
     -fx-spacing: 4;
 }
+
 #howToSetDevKey{
     -fx-max-width: 15;
     -fx-max-height: 15;
     -fx-background-radius: 15;
     -fx-background-color: AliceBlue;
     -fx-padding: 3;
+}
+#footerBar{
+    -fx-padding: 10;
+    -fx-border-radius: 2;
+    -fx-border-style: solid;
+    -fx-border-color: #D3D3D3;
+    -fx-spacing: 4;
 }
 
 .submitDialog.statusBtnBox{

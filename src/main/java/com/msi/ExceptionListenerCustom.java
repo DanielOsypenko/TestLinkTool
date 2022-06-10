@@ -41,11 +41,11 @@ public class ExceptionListenerCustom implements Runnable {
             popup.setX(stage.getX() + stage.getWidth() / 2 - popup.getWidth() / 2);
             popup.setY(stage.getY() + stage.getHeight() / 2 - popup.getHeight() / 2);
         });
+        popup.setForceIntegerRenderScale(true);
         Platform.runLater(() -> popup.show(stage));
         // disable progress indicator when popup comes
         for (Node node : stage.getScene().getRoot().getChildrenUnmodifiable()) {
             if (node instanceof ProgressIndicator) {
-                logger.info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> found PI");
                 node.setVisible(false);
             }
         }

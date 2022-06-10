@@ -45,11 +45,12 @@
             <StackPane fx:id="testSuitsTreePane"/>
         </ListView>
     </VBox>
-    <HBox fx:id="buttonsBar" alignment="TOP_LEFT">
+    <HBox fx:id="footerBar" alignment="TOP_LEFT">
         <Button fx:id="expandListBtn" onAction="#onExpandList"/>
         <Button fx:id="refreshListBtn" text="Refresh List"/>
         <Button fx:id="reportBtn" text="Report"/>
-        <HBox minWidth="450"/>
+        <!-- hack to push elements at horizontal box-->
+        <HBox minWidth="440"/>
         <TextField fx:id="devKeyTextField" promptText="Enter dev key from Test Link"/>
         <Button fx:id="saveDevKey" text="Save DEV KEY"/>
         <Button fx:id="howToSetDevKey"/>
