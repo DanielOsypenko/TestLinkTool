@@ -55,6 +55,10 @@ import java.util.stream.Collectors;
 //TODO: adjust size of the list from main window                                    - DONE
 //TODO: set dev key field with ?-help symbol                                        - DONE
 //TODO: progress for reporting
+//TODO: list should be scrollable horizontally
+//TODO: test case can be copied (text)
+//TODO: treeview with embedded folders + sorting
+//TODO: UI confirmation that tests have been reported
 
 public class Controller implements Initializable {
     private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
