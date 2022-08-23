@@ -17,7 +17,7 @@ import java.util.logging.Level;
 
 public class ToolManager {
 
-    private final static String SERVER_URL = "http://testlink.watchguardvideo.local/lib/api/xmlrpc/v1/xmlrpc.php";
+    private final static String SERVER_URL = "put_link_to_the_server";
     private static String devKey;
     private static final java.util.logging.Logger logger =
             java.util.logging.Logger.getLogger(ToolManager.class.getSimpleName());
@@ -83,8 +83,8 @@ public class ToolManager {
 
     public static void main(String[] args) {
 
-        TestProjectApi testProjectApi = ToolManager.getInstance().chooseProject("G3INCAR");
-        testProjectApi.chooseTestPlan("ECN Automation");
+        TestProjectApi testProjectApi = ToolManager.getInstance().chooseProject("set_the_project");
+        testProjectApi.chooseTestPlan("set_the_test_plan");
         testProjectApi.getTestPlanApi().getTestCasesAndSetExecutionStatusToTestCaseMap(true);
         Instant startTimer = Instant.now();
         Integer[] testIds = new Integer[]{26735, 26737, 26741, 26743,26745};
