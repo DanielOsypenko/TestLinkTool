@@ -14,27 +14,27 @@
     -fx-max-width: 200;
 }
 
-#testPlanListBox {
+#testPlanListBox_dropdown {
     -fx-min-width: 200;
     -fx-max-width: 200;
 }
 #testSuitsPaneVbox {
     -fx-padding: 0;
-    -fx-pref-height: 720;
+    -fx-pref-height: 640;
 }
 #testSuitsListView{
-    -fx-pref-height: inherit;
+    -fx-pref-height: 640;
     -fx-padding: 0;
 }
 #testSuitsTreePane {
     -fx-padding: 0;
-    -fx-pref-height: 720;
+    -fx-pref-height: inherit;
     -fx-font-size: 10pt;
 }
 #suiteButtons{
     -fx-spacing: 4;
 }
-#testPlanProjectListHBox{
+#testPlanProjectListHBox_dropdowns{
     -fx-spacing: 4;
 }
 #buttonsBar{

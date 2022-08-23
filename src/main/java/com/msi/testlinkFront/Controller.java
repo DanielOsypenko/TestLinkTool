@@ -1,7 +1,10 @@
 package com.msi.testlinkFront;
 
 import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
-import br.eti.kinoshita.testlinkjavaapi.model.*;
+import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
+import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
+import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
+import br.eti.kinoshita.testlinkjavaapi.model.TestSuite;
 import com.msi.ConfigManager;
 import com.msi.ExceptionListenerCustom;
 import com.msi.testlinkBack.ToolManager;
@@ -30,12 +33,12 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
+import org.apache.commons.lang.StringUtils;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.textfield.CustomTextField;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 
@@ -43,21 +46,30 @@ import java.util.stream.Collectors;
 //TODO: update list of the selected tests                                           - DONE
 //TODO: refresh list of tests by button                                             - DONE
 //TODO: refresh list set disable while no list available
-//TODO: fix thread leak in a test plan.
+//TODO: fix thread leak in a test plan.                                             - DONE
 //TODO: open submit window works from second attempt                                - DONE
 //TODO: update selected test cases for submit view
-//TODO: set dev key in opened popup with ? sign and image of where to search it
+//TODO: set dev key in opened popup with ? sign and image of where to search it     - DONE
 //TODO: no rights - terminate progressing
 //TODO: read fields to submit window                                                - DONE
 //TODO: change warning text and font size
-//TODO: add text field for notifications in report dialog
-//TODO: change favicon from default
+//TODO: add text field for notifications in report dialog                           - DONE
+//TODO: change favicon from default                                                 - DONE
 //TODO: adjust size of the list from main window                                    - DONE
 //TODO: set dev key field with ?-help symbol                                        - DONE
-//TODO: progress for reporting
+//TODO: progress for Reporting
+//TODO: horizontal scroll list to see all the summary
+//TODO: filter list by status
+//TODO: list should stay the same after Refresh List. Expanded and on the same position
+//TODO: Add a text filter accessed by <ctrl>-f
+//TODO: Auto-dismiss the popup on successful report
+//TODO: fix logging to have all output in file
+
 
 public class Controller implements Initializable {
-    private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
+    private static final java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(ToolManager.class.getSimpleName());
+
 
     ToolManager toolManager;
     ConfigManager configManager;
@@ -73,13 +85,19 @@ public class Controller implements Initializable {
     public VBox main;
 
     @FXML
-    public HBox testPlanProjectListHBox;
+    public HBox testPlanProjectListHBox_dropdowns;
+
+    @FXML
+    public VBox testSuitsPaneVbox;
+
+    @FXML
+    private ComboBox<String> testPlanListBox_dropdown;
 
     @FXML
     private ComboBox<String> testProjectListBox;
 
     @FXML
-    private ComboBox<String> testPlanListBox;
+    public ListView testSuitsListView;
 
     private ProgressIndicator pb;
 
@@ -124,7 +142,7 @@ public class Controller implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        testPlanListBox.setDisable(true);
+        testPlanListBox_dropdown.setDisable(true);
         expandListBtn.setText(expandText);
         expandListBtn.setDisable(true);
 
@@ -134,6 +152,11 @@ public class Controller implements Initializable {
                 , executionStatusNumsBlocked);
         executionStatusNumsPass.setLeft(getStatusBallImageView(Color.GREEN));
         executionStatusNumsPass.setPromptText("Passed");
+//       TODO - filter list with only passed/failed/etc - get from TestLinkApi
+//        executionStatusNumsPass.setOnMouseClicked( e ->
+//
+//                createTestCasesTree()
+//        );
         executionStatusNumsNotRun.setLeft(getStatusBallImageView(Color.GRAY));
         executionStatusNumsNotRun.setPromptText("Not run");
         executionStatusNumsFailed.setLeft(getStatusBallImageView(Color.RED));
@@ -148,6 +171,9 @@ public class Controller implements Initializable {
         initRefreshButton();
         refreshListBtn.setDisable(true);
         reportBtn.setDisable(true);
+
+        ScrollPane scroll = new ScrollPane();
+        scroll.setContent(testProjectListBox);
     }
 
     private void initHowTo() {
@@ -199,9 +225,22 @@ public class Controller implements Initializable {
             logger.info("saving dev key");
             String devKeyText = devKeyTextField.getText();
             if (devKeyText != null && !devKeyText.isEmpty()) {
-                configManager.getConfig().setDevKey(devKeyText);
-                configManager.writeConfig(configManager.getConfig().getConfigMap());
-                toolManager = ToolManager.resetInstance(devKeyText);
+                if (devKeyText.length() == 32 && StringUtils.isAlphanumeric(devKeyText)) {
+                    configManager.getConfig().setDevKey(devKeyText);
+                    configManager.writeConfig(configManager.getConfig().getConfigMap());
+                    toolManager = ToolManager.resetInstance(devKeyText);
+                    Notifications.create()
+                            .title("Success")
+                            .position(Pos.CENTER)
+                            .text("Dev Key saved")
+                            .showConfirm();
+                } else {
+                    Notifications.create()
+                            .title("Warning")
+                            .position(Pos.CENTER)
+                            .text("Dev key is a 32char alphanumeric string. Please see '?' btn")
+                            .showWarning();
+                }
             } else {
                 Notifications.create()
                         .title("Warning")
@@ -225,14 +264,14 @@ public class Controller implements Initializable {
         });
         testProjectListBox.setItems(testProjectList);
         testProjectListBox.setOnAction((event) -> {
-            testPlanListBox.setVisibleRowCount(10);
-            testPlanListBox.setDisable(true);
+            testPlanListBox_dropdown.setVisibleRowCount(10);
+            testPlanListBox_dropdown.setDisable(true);
             resetStatusNumBar();
             String selectedItem = testProjectListBox.getSelectionModel().getSelectedItem();
             if (selectedItem != null) {
                 toolManager.chooseProject(selectedItem);
                 logger.info("selected test project = " + selectedItem);
-                testPlanListBox.setDisable(false);
+                testPlanListBox_dropdown.setDisable(false);
                 reportBtn.setDisable(true);
                 testSuitsTreePane.getChildren().clear();
                 // set exception listener bonded with runTestPlanListener
@@ -246,7 +285,7 @@ public class Controller implements Initializable {
     @FXML
     protected void onAppearanceSetTestPlan() {
         if (toolManager.getTestProjectApi()!= null && toolManager.getTestProjectApi().getTestProject() != null) {
-            testPlanListBox.setVisibleRowCount(10);
+            testPlanListBox_dropdown.setVisibleRowCount(10);
             TestPlan[] testPlans = toolManager.getTestProjectApi().getTestPlans();
             ObservableList<String> testPlansList = FXCollections.observableArrayList();
             Arrays.stream(testPlans).forEach(tp -> {
@@ -254,10 +293,10 @@ public class Controller implements Initializable {
                 testPlansList.add(tp.getName());
             });
 
-            testPlanListBox.setItems(testPlansList);
-            testPlanListBox.setOnAction((event) -> {
+            testPlanListBox_dropdown.setItems(testPlansList);
+            testPlanListBox_dropdown.setOnAction((event) -> {
 
-                String selectedItem = testPlanListBox.getSelectionModel().getSelectedItem();
+                String selectedItem = testPlanListBox_dropdown.getSelectionModel().getSelectedItem();
                 if (selectedItem != null) {
                     toolManager.getTestProjectApi().chooseTestPlan(selectedItem);
                     logger.info("selected test plan = " + selectedItem);
@@ -265,11 +304,11 @@ public class Controller implements Initializable {
                     refreshListBtn.setDisable(false);
                     reportBtn.setDisable(true);
                 } else {
-                    logger.error("select project before selection test plan");
+                    logger.log(Level.SEVERE, "select project before selection test plan");
                 }
             });
         } else {
-            testPlanListBox.setDisable(true);
+            testPlanListBox_dropdown.setDisable(true);
         }
     }
 
@@ -317,7 +356,7 @@ public class Controller implements Initializable {
 
                 buildTestSuitsAndCasesTree(testSuiteListMapSorted);
             } else {
-                logger.error("resp from getPlanService on succession is not suitable.");
+                logger.log(Level.SEVERE, "resp from getPlanService on succession is not suitable.");
             }
         });
 
@@ -416,9 +455,12 @@ public class Controller implements Initializable {
 
             mapWithSummaries.forEach((suite, testCases) -> {
                 TreeItem<String> suiteItem = new TreeItem<>(suite.getName());
+                int maxSymb = 170;
 
                 testCases.forEach(tcInitial -> {
-                            TreeItem<String> tcItem = new TreeItem<>(tcInitial.getFullExternalId() + ":" + tcInitial.getName());
+                    String tcSummary = tcInitial.getName().length() < maxSymb ? tcInitial.getName() : tcInitial.getName().substring(0, maxSymb) + "\n" + tcInitial.getName().substring(maxSymb);
+                            TreeItem<String> tcItem = new TreeItem<>(tcInitial.getFullExternalId() + ":" + tcSummary);
+
                             ImageView execStatusBallImageView = new ImageView(new Image(Objects.requireNonNull(this.getClass().getResourceAsStream("/status_ball.png"))));
 
 
@@ -427,9 +469,9 @@ public class Controller implements Initializable {
 
                             if (testPlanApi.getTestCasesFailed().stream().anyMatch(tc -> tc.getId().equals(tcInitial.getId()))) {
                                 setColorToImageView(execStatusBallImageView, Color.RED);
-                            } else if (testPlanApi.getTestCasesNotRun().stream().anyMatch(tc -> tc.getId().equals(tcInitial.getId()))){
+                            } else if (testPlanApi.getTestCasesNotRun().stream().anyMatch(tc -> tc.getId().equals(tcInitial.getId()))) {
                                 setColorToImageView(execStatusBallImageView, Color.GRAY);
-                            } else if (testPlanApi.getTestCasesPassed().stream().anyMatch(tc -> tc.getId().equals(tcInitial.getId()))){
+                            } else if (testPlanApi.getTestCasesPassed().stream().anyMatch(tc -> tc.getId().equals(tcInitial.getId()))) {
                                 setColorToImageView(execStatusBallImageView, Color.GREEN);
                             } else if (testPlanApi.getTestCasesBlocked().stream().anyMatch(tc -> tc.getId().equals(tcInitial.getId()))) {
                                 setColorToImageView(execStatusBallImageView, Color.BLUE);
@@ -445,7 +487,7 @@ public class Controller implements Initializable {
             return testCasesTree;
         } else {
             //TODO: set combobox red
-            logger.error("set test plan before");
+            logger.log(Level.SEVERE, "set test plan before");
         }
         return null;
     }

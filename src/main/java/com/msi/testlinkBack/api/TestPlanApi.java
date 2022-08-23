@@ -4,6 +4,7 @@ import br.eti.kinoshita.testlinkjavaapi.TestLinkAPI;
 import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
 import br.eti.kinoshita.testlinkjavaapi.model.*;
 import br.eti.kinoshita.testlinkjavaapi.util.TestLinkAPIException;
+import com.msi.ConfigManager;
 import com.msi.testlinkBack.TestCaseCustom;
 import com.msi.testlinkBack.TestSuiteCustom;
 import com.msi.testlinkBack.ToolManager;
@@ -16,81 +17,33 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class TestPlanApi extends TestPlanListener {
 
     private TestLinkAPI api;
     TestProjectApi testProjectApi;
-    private TestPlan testPlan;
-//    private Integer testPlanId;
-//    private String testPlanName;
-//    static final Logger logger = LoggerFactory.getLogger(TestPlanApi.class.getSimpleName());
-//    Map<ExecutionStatus, List<TestCase>> testCasesToStatusMap;
-//    List<TestCase> testCasesActual = null;
-//    List<TestCase> testCasesActualNotRun = null;
-//    List<TestCase> testCasesActualPassed = null;
-//    List<TestCase> testCasesActualBlocked = null;
-//    List<TestCase> testCasesActualFailed = null;
-//    int testCasesActualNum;
-//    int testCasesActualNotRunNum;
-//    int testCasesActualPassedNum;
-//    int testCasesActualBlockedNum;
-//    int testCasesActualFailedNum;
-
-//
-//    Build[] builds;
-//    private Integer buildIdLast;
-
+    private static final java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(TestPlanApi.class.getSimpleName());
 
     ConcurrentLinkedQueue <ReportTCResultResponse> reportTCResultResponse = new ConcurrentLinkedQueue<>();
 
     public TestPlanApi() {
-//        this.testPlanListener = ((TestPlanListener) this);
         ToolManager manager = ToolManager.getInstance();
         this.api = manager.getApi();
         this.testProjectApi = manager.getTestProjectApi();
     }
 
-//    public TestPlanApi setTestPlan(String planName) {
-//        this.testPlan = api.getTestPlanByName(planName, testProjectApi.getProjectName());
-//        this.testPlanId = testPlan.getId();
-//        this.testPlanName = testPlan.getName();
-//        Executors.newCachedThreadPool().execute(() -> this.setBuilds(api.getBuildsForTestPlan(this.testPlanId)));
-////        Thread testPlanListenerThread = new Thread(this);
-////        testPlanListenerThread.start();
-//        return this;
-//    }
-
-//    public void setBuilds(Build[] builds) {
-//        this.builds = builds;
-//        if (this.builds != null && this.builds.length > 0){
-//            this.buildIdLast = builds[builds.length-1].getId();
-//            logger.info("builds for Test plan '" + this.getTestPlanName() + "' found: " + builds.length);
-//        } else {
-//            logger.info("no builds for Test plan '" + this.getTestPlanName() + " found");
-//        }
-//    }
-
-
-
     public TestPlan getTestPlan() {
         return testPlan;
     }
 
-//    public int getTestPlanId() {
-//        return testPlanId;
-//    }
-//
-//    public String getTestPlanName() {
-//        return testPlanName;
-//    }
-//
     public TestSuite[] getTestSuits(){
         if (testPlanId != null){
             return this.api.getTestSuitesForTestPlan(testPlanId);
         } else {
-            logger.error("Can not get test suits. Choose Test Plan before");
+            logger.log(Level.SEVERE, "Can not get test suits. Choose Test Plan before");
         }
         return null;
     }
@@ -103,89 +56,15 @@ public class TestPlanApi extends TestPlanListener {
         return buildIdLast;
     }
 
-//    public List<TestCase> getTestCasesForTestPlan(boolean update) {
-//        if (ToolManager.getManager().getTestProjectApi().getProjectName() != null && this.testPlanName != null) {
-//            if (update) {
-//                this.testCasesActual = Arrays.asList(api.getTestCasesForTestPlan(
-//                        this.testPlanId
-//                        , null
-//                        , null
-//                        , null
-//                        , null
-//                        , null
-//                        , null
-//                        , null
-//                        , null
-//                        , null
-//                        , null));
-//                this.testCasesActualNum = testCasesActual.size();
-//            }
-//        } else {
-//            logger.error("Can not get test cases. Set projectName && testPlanName");
-//        }
-//        return testCasesActual;
-//    }
-
 
     public List<TestCase> getTestCasesByExecStatus(ExecutionStatus executionStatus) throws TestLinkAPIException {
         if (testCasesActual == null || testCasesActual.size() > 0) {
             getTestCasesForTestPlan(true);
         } else {
-            logger.error("No test cases found");
+            logger.log(Level.SEVERE, "No test cases found");
         }
         return testCasesActual.stream().filter(tc -> (tc.getExecutionStatus() == executionStatus)).collect(Collectors.toList());
     }
-
-//    synchronized public Map<ExecutionStatus, List<TestCase>> getTestCasesAndSetExecutionStatusToTestCaseMap(boolean update) {
-//        getTestCasesForTestPlan(update);
-//        return getExecutionStatusToTestCasesMap();
-//    }
-//
-//    private Map<ExecutionStatus, List<TestCase>> getExecutionStatusToTestCasesMap() {
-//        this.testCasesToStatusMap = testCasesActual.stream().collect(Collectors.groupingBy(TestCase::getExecutionStatus));
-//        Arrays.stream(ExecutionStatus.values()).forEach(es->this.testCasesToStatusMap.putIfAbsent(es, new ArrayList<>()));
-//        getTestCasesNotRun();
-//        getTestCasesPassed();
-//        getTestCasesBlocked();
-//        getTestCasesFailed();
-//        return this.testCasesToStatusMap;
-//    }
-
-//    public List<TestCase> getTestCasesNotRun() {
-//        if (this.testCasesToStatusMap == null || this.testCasesToStatusMap.isEmpty()){
-//            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
-//        }
-//        testCasesActualNotRun = testCasesToStatusMap.get(ExecutionStatus.NOT_RUN);
-//        testCasesActualNotRunNum = testCasesActualNotRun.size();
-//        return testCasesActualNotRun;
-//    }
-//
-//    public List<TestCase> getTestCasesPassed() {
-//        if (this.testCasesToStatusMap.isEmpty()){
-//            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
-//        }
-//        testCasesActualPassed = testCasesToStatusMap.get(ExecutionStatus.PASSED);
-//        this.testCasesActualPassedNum = testCasesActualPassed.size();
-//        return testCasesActualPassed;
-//    }
-//
-//    public List<TestCase> getTestCasesBlocked() {
-//        if (this.testCasesToStatusMap.isEmpty()) {
-//            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
-//        }
-//        testCasesActualBlocked = testCasesToStatusMap.get(ExecutionStatus.BLOCKED);
-//        testCasesActualBlockedNum = testCasesActualBlocked.size();
-//        return testCasesActualBlocked;
-//    }
-//
-//    public List<TestCase> getTestCasesFailed() {
-//        if (this.testCasesToStatusMap.isEmpty()) {
-//            getTestCasesAndSetExecutionStatusToTestCaseMap(false);
-//        }
-//        testCasesActualFailed = testCasesToStatusMap.get(ExecutionStatus.FAILED);
-//        testCasesActualFailedNum = testCasesActualFailed.size();
-//        return testCasesActualFailed;
-//    }
 
     public int getTestCasesActualNotRunNum() {
         return testCasesActualNotRunNum;
@@ -271,7 +150,7 @@ public class TestPlanApi extends TestPlanListener {
                     entry.setValue(entry.getValue().stream().filter(tc -> idsFromTestPlanTestCases.contains(tc.getId())).collect(Collectors.toList()))
             );
         } else {
-            logger.error("Got exception on getTestCasesForTestPlan(). Assuming no permissions for test plan");
+            logger.log(Level.SEVERE, "Got exception on getTestCasesForTestPlan(). Assuming no permissions for test plan");
         }
         return mapWithSummaries;
     }
@@ -313,7 +192,7 @@ public class TestPlanApi extends TestPlanListener {
             boolean tasksLeft = executionService.awaitTermination(20, TimeUnit.SECONDS);
             logger.info("all reports sent: " + tasksLeft);
         } catch (InterruptedException e) {
-            logger.error("execute report results interrupted: " + ExceptionUtils.getStackTrace(e));
+            logger.log(Level.SEVERE, "execute report results interrupted: " + ExceptionUtils.getStackTrace(e));
         }
         return reportTCResultResponse;
     }

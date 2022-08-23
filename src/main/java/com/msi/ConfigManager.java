@@ -6,8 +6,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,11 +13,13 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.logging.Level;
 
 public class ConfigManager {
 
     private final String configPath = "testlink-config.json";
-    private static final Logger logger = LoggerFactory.getLogger(ConfigManager.class.getSimpleName());
+    private static final java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(ConfigManager.class.getSimpleName());
 
     static private ConfigManager configManager;
     private final Config config;
@@ -47,7 +47,7 @@ public class ConfigManager {
         try {
             Files.createFile(Path.of(pathStr));
         } catch (IOException e) {
-            logger.error(ExceptionUtils.getStackTrace(e));
+            logger.log(Level.SEVERE, ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -55,7 +55,7 @@ public class ConfigManager {
         try {
             Files.write(Path.of(configPath), new JSONObject(configMap).toString().getBytes());
         } catch (IOException e) {
-            logger.error(ExceptionUtils.getStackTrace(e));
+            logger.log(Level.SEVERE, ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -63,7 +63,7 @@ public class ConfigManager {
         try {
             Files.write(Path.of(configPath), configJson.toString().getBytes());
         } catch (IOException e) {
-            logger.error(ExceptionUtils.getStackTrace(e));
+            logger.log(Level.SEVERE, ExceptionUtils.getStackTrace(e));
         }
     }
 
@@ -93,7 +93,7 @@ public class ConfigManager {
                 }
                 config.setCustomFields(new LinkedHashMap<>(customFieldsMap));
             } catch (IOException | ClassCastException | ParseException e) {
-                logger.error(ExceptionUtils.getStackTrace(e));
+                logger.log(Level.SEVERE, ExceptionUtils.getStackTrace(e));
             }
         } else {
             createFile(configPath);

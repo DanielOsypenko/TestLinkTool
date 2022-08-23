@@ -8,10 +8,9 @@ import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
 import br.eti.kinoshita.testlinkjavaapi.util.TestLinkAPIException;
 import com.msi.testlinkBack.ToolManager;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class TestPlanListener implements Runnable{
@@ -35,7 +34,8 @@ public class TestPlanListener implements Runnable{
     protected Build[] builds;
     protected Integer buildIdLast;
 
-    static final Logger logger = LoggerFactory.getLogger(TestPlanListener.class.getSimpleName());
+    static final java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(TestPlanListener.class.getSimpleName());
     final Object lock = ToolManager.getInstance().getLock();
 
     public TestPlanListener() {
@@ -64,7 +64,7 @@ public class TestPlanListener implements Runnable{
             try {
                 getTestCasesAndSetExecutionStatusToTestCaseMap(true);
             } catch (TestLinkAPIException e) {
-                logger.error("Got exception on requesting test suite:\n"+ ExceptionUtils.getStackTrace(e));
+                logger.log(Level.SEVERE, "Got exception on requesting test suite:\n"+ ExceptionUtils.getStackTrace(e));
                 // raise popup
                 synchronized (lock){
                     lock.notifyAll();
@@ -145,7 +145,7 @@ public class TestPlanListener implements Runnable{
                 this.testCasesActualNum = testCasesActual.size();
             }
         } else {
-            logger.error("Can not get test cases. Set projectName && testPlanName");
+            logger.log(Level.SEVERE, "Can not get test cases. Set projectName && testPlanName");
         }
         return testCasesActual;
     }

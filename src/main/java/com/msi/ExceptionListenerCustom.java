@@ -8,16 +8,14 @@ import javafx.scene.control.ProgressIndicator;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ExceptionListenerCustom implements Runnable {
 
     Stage stage;
 
-    private static final Logger logger = LoggerFactory.getLogger(ExceptionListenerCustom.class.getSimpleName());
+    private static final java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(ExceptionListenerCustom.class.getSimpleName());
 
     public ExceptionListenerCustom(Stage stage) {
         this.stage = stage;

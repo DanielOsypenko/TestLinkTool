@@ -18,8 +18,6 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -54,7 +52,8 @@ public class ReportStageDialog extends Stage {
 
     ExecutionStatus submitStatus = null;
     double padding = 4;
-    private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
+    private static final java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(ToolManager.class.getSimpleName());
 
     public ReportStageDialog() {
         // initialize some elements.

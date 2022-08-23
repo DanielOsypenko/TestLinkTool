@@ -14,7 +14,7 @@
     </padding>
 
 
-    <HBox fx:id="testPlanProjectListHBox">
+    <HBox fx:id="testPlanProjectListHBox_dropdowns">
 
             <HBox fx:id="testProjectListHBox">
                 <ComboBox fx:id="testProjectListBox" onShowing="#onAppearanceSetProject">
@@ -24,7 +24,7 @@
                 </ComboBox>
             </HBox>
             <HBox fx:id="testPlanListHBox">
-                <ComboBox fx:id="testPlanListBox" onShowing="#onAppearanceSetTestPlan">
+                <ComboBox fx:id="testPlanListBox_dropdown" onShowing="#onAppearanceSetTestPlan">
                     <value>
                         <String fx:value="Test Plan"/>
                     </value>
@@ -41,9 +41,9 @@
 
 
     <VBox fx:id="testSuitsPaneVbox">
-        <ListView fx:id="testSuitsListView">
+<!--        <ListView fx:id="testSuitsListView">-->
             <StackPane fx:id="testSuitsTreePane"/>
-        </ListView>
+<!--        </ListView>-->
     </VBox>
     <HBox fx:id="footerBar" alignment="TOP_LEFT">
         <Button fx:id="expandListBtn" onAction="#onExpandList"/>

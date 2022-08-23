@@ -4,8 +4,6 @@ import br.eti.kinoshita.testlinkjavaapi.TestLinkAPI;
 import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
 import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
 import com.msi.testlinkBack.ToolManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,7 +14,8 @@ public class TestProjectApi {
     private TestProject testProject;
     private String projectName;
     private TestPlanApi testPlanApi;
-    private static final Logger logger = LoggerFactory.getLogger(TestLinkAPI.class.getSimpleName());
+    private static final java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(ToolManager.class.getSimpleName());
 
     public TestProjectApi(String projectName) {
         this.api = ToolManager.getInstance().getApi();
@@ -46,7 +45,7 @@ public class TestProjectApi {
         return Arrays.stream(getTestPlans()).map(TestPlan::getName).collect(Collectors.toList());
     }
 
-    public TestPlanApi chooseTestPlan(String planName){
+    public TestPlanApi chooseTestPlan(String planName) {
         this.testPlanApi = new TestPlanApi();
         this.testPlanApi.setTestPlan(planName);
         Thread testPlanApiListenerThread = new Thread(this.testPlanApi);

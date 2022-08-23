@@ -5,8 +5,6 @@ import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
 import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
 import br.eti.kinoshita.testlinkjavaapi.util.TestLinkAPIException;
 import com.msi.testlinkBack.api.TestProjectApi;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -15,12 +13,14 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
 
 public class ToolManager {
 
     private final static String SERVER_URL = "http://testlink.watchguardvideo.local/lib/api/xmlrpc/v1/xmlrpc.php";
     private static String devKey;
-    private static final Logger logger = LoggerFactory.getLogger(ToolManager.class.getSimpleName());
+    private static final java.util.logging.Logger logger =
+            java.util.logging.Logger.getLogger(ToolManager.class.getSimpleName());
 
     TestLinkAPI api;
     TestProjectApi testProjectApi;
@@ -34,7 +34,7 @@ public class ToolManager {
         try {
             this.api = new TestLinkAPI(new URL(SERVER_URL), devKey);
         } catch (TestLinkAPIException | MalformedURLException e) {
-            logger.warn(Arrays.toString(e.getStackTrace()));
+            logger.log(Level.SEVERE, Arrays.toString(e.getStackTrace()));
         }
     }
 
