@@ -1,10 +1,7 @@
 package com.msi.testlinkFront;
 
 import br.eti.kinoshita.testlinkjavaapi.constants.ExecutionStatus;
-import br.eti.kinoshita.testlinkjavaapi.model.TestCase;
-import br.eti.kinoshita.testlinkjavaapi.model.TestPlan;
-import br.eti.kinoshita.testlinkjavaapi.model.TestProject;
-import br.eti.kinoshita.testlinkjavaapi.model.TestSuite;
+import br.eti.kinoshita.testlinkjavaapi.model.*;
 import com.msi.ConfigManager;
 import com.msi.ExceptionListenerCustom;
 import com.msi.testlinkBack.ToolManager;
@@ -154,7 +151,6 @@ public class Controller implements Initializable {
         executionStatusNumsPass.setPromptText("Passed");
 //       TODO - filter list with only passed/failed/etc - get from TestLinkApi
 //        executionStatusNumsPass.setOnMouseClicked( e ->
-//
 //                createTestCasesTree()
 //        );
         executionStatusNumsNotRun.setLeft(getStatusBallImageView(Color.GRAY));
